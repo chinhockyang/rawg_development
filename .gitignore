@@ -1,4 +1,9 @@
 # virutal env
 venv
 
+# API Keys
 .env
+
+# Data Folders
+raw_data
+transformed_data
