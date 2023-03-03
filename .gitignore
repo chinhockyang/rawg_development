@@ -18,3 +18,7 @@ airflow/airflow-webserver.pid
 airflow/airflow.cfg
 airflow/airflow.db
 airflow/webserver_config.py
+
+# Cached Data
+.DS_Store
+__pycache__

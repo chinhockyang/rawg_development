@@ -1,7 +1,10 @@
 import os
 import requests
 import pandas as pd
-
+import numpy as np
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from database import Base
 
 ####################################################################################################
 ###### EXTRACT
@@ -343,70 +346,46 @@ def transform_game_detail_api(resp_json):
 
 
 
-def transform_nested_row_into_df(row: pd.Series, column: str) -> pd.DataFrame:
-    """
-    [IN DEVELOPMENT]
-    
-    Function to transform a row (containing nested objects) into a Pandas DataFrame
+####################################################################################################
+###### Load
+####################################################################################################
 
-    Parameters
-    ----------
-    row: pd.Series
-        A pandas series
 
-    column: str
-        Column to be transformed
+# Used during DB Querying
+def convert_row_to_dict(row, Table):
+    '''
+    Convert an SQLAlchemy Row into a Dictionary
+    '''
+    lst_of_col = [col.name for col in Table.__table__.columns]
 
-    """
+    if type(row) == Table:  # Row obtained from .get()
+        dct = { col : getattr(row, col) for col in lst_of_col}
+        return dct
 
-    # Transform Type 1
-    type_1_col_name_nested_key = {
-        "platforms": "platform",
-        "stores": "store",
-        "parent_platforms": "platform"
-    }
+    # Obtains from Rows obtained from .all()
+    obj = list(dict(row._mapping).values())[0]
+    dct = { col : getattr(obj, col) for col in lst_of_col}
 
-    # Transform Type 2
-    type_2_col_name = [
-        "tag"
-    ]
+    return 
 
-    # Transform Type 3
-    type_3_col_name_nested_key = {
-        "ratings": "rating",
-        "added_by_status": "status",
-        "esrb_rating": "esrb",
-        "genres": "genre"
-    }
 
-    df = pd.DataFrame()
+# Session, Engine
+def session_engine_from_connection_string(conn_string):
+    '''
+    Takes in a DB Connection String
+    Return a tuple: (session, engine)
+    e.g. session, engine = session_engine_from_connection_string(string)
+    '''
+    engine = create_engine(conn_string)
+    Base.metadata.bind = engine
+    DBSession = sessionmaker(bind=engine)
+    return DBSession(), engine
 
-    if column in type_1_col_name_nested_key.keys():
-        if (row[column] != None):
-            for i in row[column]:
-                print(type_1_col_name_nested_key[i])
-                df = pd.concat([df, pd.DataFrame({
-                    "game_id": [row["id"]],
-                    f"{column}_id": [
-                            type_1_col_name_nested_key[i] \
-                            [f"{type_1_col_name_nested_key[i] }"] \
-                            ["id"]
-                        ]
-                })])
 
-            return df
-        
-    elif column in type_3_col_name_nested_key.keys():
-        if (row[column] != None) and (type(row[column]) != float):
-            df_curr = pd.DataFrame(row[column], index=[0])
-            df_curr.rename(columns={"id": f"{type_3_col_name_nested_key[column]}_id"}, inplace=True)
-            df_curr.dropna(inplace=True)
-            df_curr["game_id"] = row["id"]
-            df = pd.concat([df, df_curr])
-            return df
-    
-    elif column in type_2_col_name:
-        if row[column] != None and (type(row[column]) != float):
-            for item in row[column]:
-                df = pd.concat([df, pd.DataFrame({"game_id": [row["id"]], f"{column}_id": [item["id"]]})])
-                return df
+# Convert DF into Table Objects
+def convert_df_to_lst_of_table_objects(df, Table):
+    '''
+    Takes in a dataframe (each column name aligned to a DB table's column name)
+    and convert it into a list of Table objects
+    '''
+    return [Table(**{k: v for k, v in row.items() if not np.array(pd.isnull(v)).any()}) for row in df.to_dict("records")]

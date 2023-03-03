@@ -1,6 +1,6 @@
 # Development Repository for RAWG Data Pipeline
 
-## Setup
+## Basic Setup
 
 1. Create a virual environment using ```virtualenv venv```
 2. Activate virtual environment (tutorial slides)
@@ -8,8 +8,17 @@
 - pandas
 - requests
 - python-dotenv
+- sqlalchemy
+- pymysql
+- apache-airflow (view detailed instructions below)
 4. Create a .env file in the project directory, and store your RAWG API token as ```RAWG_TOKEN=<YOUR_TOKEN>```
 5. Should be able to use the notebooks. (Don't run all cells at once if not might waste API requests)
+
+## MySQL Database Setup
+
+1. Create a schema named ```rawg``` in your local MySQL database server.
+2. Take not of the port number used for the server, and your username and password.
+3. Store the following ```MYSQL_CONNECTION_STRING="mysql+pymysql://<USERNAME>:<PASSWORD>@localhost:<PORT_NO>/rawg"``` in ```.env``` folder.
 
 ## Airflow Setup
 
