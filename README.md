@@ -6,6 +6,7 @@
 2. Activate virtual environment (tutorial slides)
 3. Install the following libraries:
 - pandas
+- numpy
 - requests
 - python-dotenv
 - sqlalchemy
@@ -17,7 +18,7 @@
 ## MySQL Database Setup
 
 1. Create a schema named ```rawg``` in your local MySQL database server.
-2. Take not of the port number used for the server, and your username and password.
+2. Take note of the port number used for the server, and your username and password.
 3. Store the following ```MYSQL_CONNECTION_STRING="mysql+pymysql://<USERNAME>:<PASSWORD>@localhost:<PORT_NO>/rawg"``` in ```.env``` folder.
 
 ## Airflow Setup
