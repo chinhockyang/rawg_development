@@ -1,0 +1,9 @@
+# For reference ==> recommend to pip install each libraries manually
+# instead of pip install -r requirements.txt
+
+numpy
+pandas
+python-dotenv
+apache-airflow==2.3.1
+sqlalchemy
+pymysql

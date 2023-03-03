@@ -7,3 +7,14 @@ venv
 # Data Folders
 raw_data
 transformed_data
+
+# Airflow Files (Everything other than dags folder)
+airflow/logs
+airflow/airflow-webserver-monitor.pid
+airflow/airflow-webserver.err
+airflow/airflow-webserver.log
+airflow/airflow-webserver.out
+airflow/airflow-webserver.pid
+airflow/airflow.cfg
+airflow/airflow.db
+airflow/webserver_config.py
