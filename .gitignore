@@ -7,6 +7,7 @@ venv
 # Data Folders
 raw_data
 transformed_data
+initial_upload_raw_data
 
 # Airflow Files (Everything other than dags folder)
 airflow/logs

@@ -50,6 +50,7 @@ def get_list_response(API_KEY: str, endpoint: str, **kwargs):
         return resp_json
     else:
         print(f"Error extracting data - Error Code {response.status_code}")
+        return response
 
 
 
