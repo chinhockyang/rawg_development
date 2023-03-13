@@ -3,7 +3,7 @@
 # [KIV]: Usage of Raw SQL Commands through Airflow BashOperators
 # ======================================================
 
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
 # Create a base for the models to build upon.
@@ -49,3 +49,85 @@ class Game(Base):
     dropped  = Column(Integer)
     playing  = Column(Integer)
     esrb  = Column(String(25))
+
+class Publisher(Base):
+    __tablename__ = "publisher"
+    id = Column(Integer, primary_key=True)
+    slug = Column(String(50))
+    name = Column(String(100))
+    description = Column(String(10000))
+
+class Genre(Base):
+    __tablename__ = "genre"
+    id = Column(Integer, primary_key=True)
+    slug = Column(String(50))
+    name = Column(String(100))
+
+class Tag(Base):
+    __tablename__ = "tag"
+    id = Column(Integer, primary_key=True)
+    slug = Column(String(50))
+    name = Column(String(100))
+
+class Store(Base):
+    __tablename__ = "store"
+    id = Column(Integer, primary_key=True)
+    slug = Column(String(50))
+    name = Column(String(100))
+    domain = Column(String(100))
+
+class Platform(Base):
+    __tablename__ = "platform"
+    id = Column(Integer, primary_key=True)
+    slug = Column(String(50))
+    name = Column(String(100))
+    parent_platform_id=Column(Integer, ForeignKey("parent_platform.id"))
+
+class ParentPlatform(Base):
+    __tablename__ = "parent_platform"
+    id = Column(Integer, primary_key=True)
+    slug = Column(String(50))
+    name = Column(String(100))
+
+class Rating(Base):
+    __tablename__ = "rating"
+    id = Column(Integer, primary_key=True)
+    title = Column(String(50))
+
+class GamePublisher(Base):
+    __tablename__ = "game_publisher"
+    game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
+    publisher_id = Column(Integer, ForeignKey("publisher.id"), primary_key=True)
+
+class GameGenre(Base):
+    __tablename__ = "game_genre"
+    game_id  = Column(Integer, ForeignKey("game.id"), primary_key=True)
+    genre_id = Column(Integer, ForeignKey("genre.id"), primary_key=True)
+
+class GameTag(Base):
+    __tablename__ = "game_tag"
+    game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
+    tag_id = Column(Integer, ForeignKey("tag.id"), primary_key=True)
+
+class GameStore(Base):
+    __tablename__ = "game_publisher"
+    game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
+    store_id = Column(Integer, ForeignKey("store.id"), primary_key=True)
+
+class GamePlatform(Base):
+    __tablename__ = "game_platform"
+    game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
+    platform_id = Column(Integer, ForeignKey("platform.id"), primary_key=True)
+    metascore = Column(Float)
+    metacritic_url = Column(String(500))
+
+class Platform_ParentPlatform(Base):
+    __tablename__ = "platform_parentplatform"
+    platform_id = Column(Integer, ForeignKey("platform.id"), primary_key=True)
+    parent_platform_id = Column(Integer, ForeignKey("parent_platform.id"), primary_key=True)
+
+class GameRating(Base):
+    __tablename__ = "game_rating"
+    rating_id = Column(Integer, ForeignKey("rating.id"), primary_key=True)
+    game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
+    count = Column(Integer)
