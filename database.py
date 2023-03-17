@@ -3,7 +3,7 @@
 # [KIV]: Usage of Raw SQL Commands through Airflow BashOperators
 # ======================================================
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
 from sqlalchemy.ext.declarative import declarative_base
 
 # Create a base for the models to build upon.
@@ -16,7 +16,7 @@ class Game(Base):
 
     id  = Column(Integer, primary_key=True)
     slug  = Column(String(50))
-    name  = Column(String(100))
+    name  = Column(String(200))
     playtime  = Column(Integer)
     released  = Column(DateTime)
     rating  = Column(Float)
@@ -34,14 +34,14 @@ class Game(Base):
     achievements_count  = Column(Integer)
     parent_achievements_count  = Column(Integer)
     reddit_url  = Column(String(500))
-    reddit_name  = Column(String(100))
+    reddit_name  = Column(String(300))
     reddit_count  = Column(Integer)
     twitch_count  = Column(Integer)
     youtube_count  = Column(Integer)
     parents_count  = Column(Integer)
     additions_count  = Column(Integer)
     game_series_count  = Column(Integer)
-    description_raw  = Column(String(10000))
+    description_raw  = Column(Text(50000))
     yet  = Column(Integer)
     owned  = Column(Integer)
     beaten  = Column(Integer)
@@ -110,7 +110,7 @@ class GameTag(Base):
     tag_id = Column(Integer, ForeignKey("tag.id"), primary_key=True)
 
 class GameStore(Base):
-    __tablename__ = "game_publisher"
+    __tablename__ = "game_store"
     game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
     store_id = Column(Integer, ForeignKey("store.id"), primary_key=True)
 

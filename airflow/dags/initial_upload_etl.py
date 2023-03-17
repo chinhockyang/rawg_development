@@ -78,5 +78,4 @@ with DAG(
         provide_context=True
     )
 
-    task_extract_game_list >> task_extract_game_detail
-    task_extract_game_detail >> task_extract_publisher
+    task_extract_game_list >> task_extract_game_detail >> task_extract_publisher
