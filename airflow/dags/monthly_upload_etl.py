@@ -29,7 +29,7 @@ with DAG(
     catchup=False
 ) as dag:
 
-    task_extract_game_list = PythonOperator(
+    task_extract_new_game_list = PythonOperator(
         task_id="extract_new_game_list",
         python_callable=extract_game_list,
         provide_context=True,
@@ -40,7 +40,7 @@ with DAG(
         }
     )
 
-    task_extract_game_list = PythonOperator(
+    task_extract_updates_game_list = PythonOperator(
         task_id="extract_updated_game_list",
         python_callable=extract_game_list,
         provide_context=True,
