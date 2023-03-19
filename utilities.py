@@ -10,7 +10,7 @@ from database import Base
 ###### EXTRACT
 ####################################################################################################
 
-
+# -------------------------------------------------------------------------[TODO]: Create Try and Catch to re-request if Error 502
 def get_list_response(API_KEY: str, endpoint: str, **kwargs):
     """
     Function to extract data from RAWG's List APIs (e.g. Game list, Developer List).

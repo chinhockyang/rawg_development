@@ -6,6 +6,7 @@
 import pandas as pd
 import os
 import requests
+from datetime import datetime
 
 from utilities import (
     get_list_response,
@@ -29,27 +30,72 @@ data_directory = os.path.join(os.getcwd(), "raw_data")
 # Python Functions of Python Operators
 ################################################################################################
 
+# -------------------------------------------------------------------------[TODO]: Decide on Data storing location for different tasks
 def extract_game_list(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
-    
-    # Data Date Range from 2018-01-01 to 2023-01-01
-    
-    # ----------------------------------------------- COMMENT OUT TO NOT OVER-REQUEST
 
-    date_range = [
-        # "2018-01-01,2018-06-30",
-        # "2018-07-01,2018-12-31",
-        # "2019-01-01,2019-06-30",
-        # "2019-07-01,2019-12-31",
-        # "2020-01-01,2020-06-30",
-        # "2020-07-01,2020-12-31",
-        # "2021-01-01,2021-06-30",
-        # "2021-07-01,2021-12-31",
-        # "2022-01-01,2022-06-30",
-        # "2022-07-01,2022-12-31",
-        "2023-01-01,2023-01-31"
-    ]
+    # type of extraction task
+    extraction_task = kwargs["extraction_task"]
+
+    # Current Year
+    if "year" in kwargs:
+        year = kwargs["year"]
+
+    # Current Month
+    if "month" in kwargs:
+        month = kwargs["month"]
+    
+
+    if extraction_task == "initial_upload":
+        # Data Date Range from 2018-01-01 to 2023-01-01
+        # ----------------------------------------------- COMMENT OUT TO NOT OVER-REQUEST
+        date_range = [
+            # "2018-01-01,2018-06-30",
+            # "2018-07-01,2018-12-31",
+            # "2019-01-01,2019-06-30",
+            # "2019-07-01,2019-12-31",
+            # "2020-01-01,2020-06-30",
+            # "2020-07-01,2020-12-31",
+            # "2021-01-01,2021-06-30",
+            # "2021-07-01,2021-12-31",
+            # "2022-01-01,2022-06-30",
+            # "2022-07-01,2022-12-31",
+            # "2023-01-01,2023-01-31"
+            "2023-01-01,2023-01-03"
+        ]
+    elif extraction_task == "extract_new_games":
+        if month == 1:
+            month_start = 12
+            year_start = year - 1
+        
+        else:
+            month_start = month - 1
+            year_start = year
+    
+        start_date = datetime(year_start, month_start, 1)
+        end_date = datetime(year, month, 1)
+        
+        date_range = [
+            f"{start_date.strftime('%Y-%m-%d')},{end_date.strftime('%Y-%m-%d')}"
+        ]
+
+    elif extraction_task == "extract_updates":
+        if month == 1:
+            update_month_start = 12
+            update_year_start = year - 1
+        else:
+            update_month_start = month - 1
+            update_year_start = year
+
+        start_date = datetime(update_year_start, update_month_start, 1)
+        end_date = datetime(year, month, 1)
+        
+        date_range = [
+            f"2018-01-01,{start_date.strftime('%Y-%m-%d')}"
+        ]
+
+        updated_date_range = f"{start_date.strftime('%Y-%m-%d')},{end_date.strftime('%Y-%m-%d')}"
 
     # Extract Data from API
     df_compiled_game_data = pd.DataFrame()
@@ -62,11 +108,25 @@ def extract_game_list(**kwargs):
     df_compiled_parent_platform = pd.DataFrame()
     df_compiled_genre = pd.DataFrame()
 
+    print("Extracting Dates:")
+    print(date_range)
+
     for range in date_range:
         continue_extract = True
         page = 1
         while continue_extract:
-            game_list_resp = get_list_response(RAWG_TOKEN, 
+            if extraction_task == "extract_updates":
+                print("Updates Date:")
+                print(updated_date_range)
+                game_list_resp = get_list_response(RAWG_TOKEN, 
+                                        "games", 
+                                        page_size=40, 
+                                        page=page,
+                                        exclude_stores="9",
+                                        updated=updated_date_range,
+                                        dates=range)
+            else:
+                game_list_resp = get_list_response(RAWG_TOKEN, 
                                         "games", 
                                         page_size=40, 
                                         page=page,
@@ -206,6 +266,7 @@ def extract_publisher(**kwargs):
     lst_of_publishers = df_game_publisher["publisher_id"].unique().tolist()
 
     # Extract Data from API
+    df_publishers = pd.DataFrame()
     for i in range(0, len(lst_of_publishers)):
         id = lst_of_publishers[i]
         publishers_json = get_detail_response(

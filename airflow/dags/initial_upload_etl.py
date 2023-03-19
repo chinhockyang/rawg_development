@@ -26,14 +26,15 @@ from extract import *
 with DAG(
     dag_id='initial_upload',
     schedule_interval=None,
-    start_date=datetime(year=2023,month=3,day=1),
+    start_date=datetime(2023, 2, 1),
     catchup=False
 ) as dag:
 
     task_extract_game_list = PythonOperator(
         task_id="extract_game_list",
         python_callable=extract_game_list,
-        provide_context=True
+        provide_context=True,
+        op_kwargs={'extraction_task': 'initial_upload'},
     )
 
     task_extract_game_detail = PythonOperator(
@@ -78,5 +79,4 @@ with DAG(
         provide_context=True
     )
 
-    task_extract_game_list >> task_extract_game_detail
-    task_extract_game_detail >> task_extract_publisher
+    task_extract_game_list >> task_extract_game_detail >> task_extract_publisher
