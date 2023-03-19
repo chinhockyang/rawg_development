@@ -19,7 +19,10 @@ airflow/airflow-webserver.pid
 airflow/airflow.cfg
 airflow/airflow.db
 airflow/webserver_config.py
+airflow/dags/IS3107A3_GERARDTANWEIKIAT.py
+airflow/dags/tutorial_etl_dag_is3107.py
 
 # Cached Data
 .DS_Store
 __pycache__
+.ipynb_checkpoints
