@@ -5,6 +5,7 @@ venv
 .env
 
 # Data Folders
+data
 raw_data
 transformed_data
 initial_upload_raw_data
