@@ -3,7 +3,7 @@
 # [KIV]: Usage of Raw SQL Commands through Airflow BashOperators
 # ======================================================
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 
 # Create a base for the models to build upon.
@@ -49,6 +49,15 @@ class Game(Base):
     dropped  = Column(Integer)
     playing  = Column(Integer)
     esrb  = Column(String(25))
+    name_original = Column(String(200))
+    alternative_names = Column(Text)
+    tba = Column(Boolean)
+    rating_top = Column(Integer)
+    description = Column(Text)
+    background_image = Column(String(500))
+    background_image_additional = Column(String(500))
+    reddit_description = Column(Text)
+    reddit_logo = Column(String(500))
 
 class Publisher(Base):
     __tablename__ = "publisher"

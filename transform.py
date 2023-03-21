@@ -204,8 +204,7 @@ def transform_game_detail_api(resp_json):
 			"genres",
 			"tags",
 			"publishers",
-			"esrb_rating",
-			"alternative_names" # ignore
+			"esrb_rating"
 		]
 
 		# Game Details Data
@@ -283,20 +282,12 @@ def transform_entity_game(**kwargs):
 
 	# Remove these columns
 	col_to_delete = [
-		"tba",
-		"background_image",
-		"rating_top",
 		"ratings_count",
 		"clip",
 		"user_game",
 		"saturated_color",
 		"dominant_color",
 		"community_rating",
-		"name_original",
-		"description",
-		"background_image_additional",
-		"reddit_logo",
-		"reddit_description",
 		"metacritic_url"
 	]
 	df_game_output.drop(columns=col_to_delete, inplace=True)
