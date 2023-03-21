@@ -269,7 +269,8 @@ def transform_entity_game(**kwargs):
 	df_game_output.drop_duplicates(subset=["id"], inplace=True)
 
 	# Add GAME STATUS data into game table
-	df_status = pd.read_csv(os.path.join(data_directory, "game_status.csv"))
+	df_status = pd.read_csv(os.path.join(data_directory, "game_status.csv"))																			
+	df_status.rename(columns={col: f"added_{col}" if col != "game_id" else col for col in df_status.columns.tolist()}, inplace=True)	# change columns ["yet"] to ["added_yet"]
 	df_game_output = df_game_output.merge(df_status.rename(columns={"game_id": "id"}), on=["id"], how="left")
 	
 	# Add ESRB data into game table
