@@ -148,6 +148,7 @@ def extract_game_list(**kwargs):
     if extraction_task == "initial_upload":
         # Data Date Range from 2018-01-01 to 2023-01-01
         # ----------------------------------------------- COMMENT OUT TO NOT OVER-REQUEST
+        # --------------------------------------------------------------------------- [TO DOCUMENT: REACH PAGE 250 API WILL FAIL]
         date_range = [
             # "2018-01-01,2018-06-30",
             # "2018-07-01,2018-12-31",
@@ -243,15 +244,6 @@ def extract_game_list(**kwargs):
                 page += 1
             else:
                 continue_extract = False
-
-    # Data path which the rate csv data be stored [depends on type of extraction]
-    # if extraction_task == "initial_upload":
-    #     root_data_directory = os.path.join(os.getcwd(), "data", "initial_upload")
-    # elif extraction_task == "extract_new_games":
-    #     root_data_directory = os.path.join(os.getcwd(), "data", "monthly_upload", "new_games")
-    # elif extraction_task == "extract_updates":
-    #     root_data_directory = os.path.join(os.getcwd(), "data", "monthly_upload", "old_games")    
-    
 
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
     data_directory = os.path.join(root_data_directory, "raw_data")
@@ -383,6 +375,7 @@ def extract_genre(**kwargs):
     data_directory = os.path.join(root_data_directory, "raw_data")
 
     # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
     if "tag_data.csv" in os.listdir(data_directory):
         return
 
@@ -405,6 +398,7 @@ def extract_tag(**kwargs):
     data_directory = os.path.join(root_data_directory, "raw_data")
 
     # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
     if "tag_data.csv" in os.listdir(data_directory):
         return
 
@@ -437,6 +431,7 @@ def extract_store(**kwargs):
     data_directory = os.path.join(root_data_directory, "raw_data")
 
     # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
     if "store_data.csv" in os.listdir(data_directory):
         return
 
@@ -459,6 +454,7 @@ def extract_platform(**kwargs):
     data_directory = os.path.join(root_data_directory, "raw_data")
 
     # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
     if "platform_data.csv" in os.listdir(data_directory):
         return
 
@@ -490,6 +486,7 @@ def extract_parent_platform(**kwargs):
     data_directory = os.path.join(root_data_directory, "raw_data")
 
     # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
     if "parent_platform_data.csv" in os.listdir(data_directory):
         return
 

@@ -273,6 +273,7 @@ def transform_entity_game(**kwargs):
 	df_game_output = df_game_output.merge(df_status.rename(columns={"game_id": "id"}), on=["id"], how="left")
 	
 	# Add ESRB data into game table
+	# ---------------------------------------------------------------------------------------------[TO DOCUMENT]
 	try:
 		df_game_esrb = pd.read_csv(os.path.join(data_directory, "game_esrb.csv"))
 	except pd.errors.EmptyDataError:
@@ -352,7 +353,8 @@ def transform_entity_tag(**kwargs):
 	data_upload_directory = os.path.join(root_data_directory, "transformed_data")
 
 	df_tag = pd.read_csv(os.path.join(data_directory, "tag_data.csv"))
-	
+
+	# ---------------------------------------------------------------------------------------------[TO DOCUMENT]
 	# tag/list API return duplicates
 	df_tag.drop_duplicates(subset=["id"], inplace=True)
 
@@ -387,6 +389,7 @@ def transform_entity_rating(**kwargs):
 
 	df_game_ratings = pd.read_csv(os.path.join(data_directory, "game_rating.csv"))
 
+	# ---------------------------------------------------------------------------------------------[TO DOCUMENT]
 	if len(df_game_ratings) == 0:
 		df_game_ratings = pd.DataFrame(columns=["id", "title", "count", "percent", "game_id"])
 	
@@ -401,6 +404,7 @@ def transform_rs_game_platform(**kwargs):
 	data_upload_directory = os.path.join(root_data_directory, "transformed_data")
 
 	df_game_platforms = pd.read_csv(os.path.join(data_directory, "game_platform.csv"))
+	# ---------------------------------------------------------------------------------------------[TO DOCUMENT]
 	try:
 		df_game_metacritic = pd.read_csv(os.path.join(data_directory, "game_details_metacritic.csv"))
 	except pd.errors.EmptyDataError:
@@ -443,6 +447,7 @@ def transform_rs_game_rating(**kwargs):
 	data_upload_directory = os.path.join(root_data_directory, "transformed_data")
 
 	df_game_ratings = pd.read_csv(os.path.join(data_directory, "game_rating.csv"))
+	# ---------------------------------------------------------------------------------------------[TO DOCUMENT]
 	if len(df_game_ratings) == 0:
 		df_game_ratings = pd.DataFrame(columns=["id", "title", "count", "percent", "game_id"])
 

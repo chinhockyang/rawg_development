@@ -24,7 +24,8 @@ from load import load_data
 # Switch [Whether to perform Extraction]
 ################################################################################################
 
-perform_extraction = True
+# ------------------------------------------------------------------[FOR DEVELOPMENT PURPOSE]
+perform_extraction = False
 
 def set_data_directory(**kwargs):
     ti = kwargs["ti"]
