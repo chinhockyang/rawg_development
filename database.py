@@ -50,7 +50,6 @@ class Game(Base):
     playing  = Column(Integer)
     esrb  = Column(String(25))
     name_original = Column(String(200))
-    alternative_names = Column(Text)
     tba = Column(Boolean)
     rating_top = Column(Integer)
     description = Column(Text)

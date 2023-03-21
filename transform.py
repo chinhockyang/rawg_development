@@ -204,7 +204,8 @@ def transform_game_detail_api(resp_json):
 			"genres",
 			"tags",
 			"publishers",
-			"esrb_rating"
+			"esrb_rating",
+			"alternative_names" # ignore
 		]
 
 		# Game Details Data
