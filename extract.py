@@ -1,16 +1,17 @@
-# ------------------------- Extract Functions for Initial Upload ETL -------------------------
 
+# ------------------------- Extract Functions for ETL -------------------------
 
-# Import Libraries and Utility Functions
-################################################################################################
+# Import Libraries and Transform Functions
 import pandas as pd
 import os
+
 import requests
 from datetime import datetime
 
-from utilities import (
-    get_list_response,
-    get_detail_response,
+import sys
+root_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(root_dir)
+from transform import (
     transform_game_list_api,
     transform_game_detail_api,
     create_dictionary_from_df
@@ -27,10 +28,107 @@ RAWG_TOKEN = os.getenv('RAWG_TOKEN')
 data_directory = os.path.join(os.getcwd(), "raw_data")
 
 
+# Functions Used to Perform API Request
+################################################################################################
+
+# -------------------------------------------------------------------------[TODO]: Create Try and Catch to re-request if Error 502
+
+def get_list_response(API_KEY: str, endpoint: str, **kwargs):
+    """
+    Function to extract data from RAWG's List APIs (e.g. Game list, Developer List).
+    Return a json object on successful extraction (status_code: 200)
+    Return a response object on failure of extraction
+
+    Parameters
+    ----------
+    API_KEY: str
+        API Token
+
+    endpoint: str
+        The end-point of the API request to be sent (e.g. "games" or "platforms/lists/parents")
+
+    **kwargs
+        API request payload (specify parameter and value)
+
+    """
+
+    url = f"https://api.rawg.io/api/{endpoint}"
+
+    headers = {
+        'accept': 'application/json'
+    }
+
+    params ={
+        'key': API_KEY
+    }
+
+    for k,v in kwargs.items():
+        params[k] = v
+    
+    response = requests.get(url, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        resp_json = response.json()
+        return resp_json
+    else:
+        print(f"Error extracting data - Error Code {response.status_code}")
+        return response
+
+
+def get_detail_response(API_KEY, endpoint, id, game_info=False, **kwargs):
+    """
+    Function to extract data from RAWG's Detailed APIs (e.g. Game Details).
+    Return a json object on successful extraction (status_code: 200)
+    Return a response object on failure of extraction
+
+    Parameters
+    ----------
+    API_KEY: str
+        API Token
+
+    endpoint: str
+        The end-point of the API request to be sent (e.g. "games", "developers" etc)
+
+    id: 
+        The ID (index or slug) of the item to be retrieved
+    
+    games_info: 
+        If accessing specific information of the Games API (e.g. achievements)
+    
+    **kwargs
+        API request payload (specify parameter and value)
+
+    """
+    if game_info:
+        url = f"https://api.rawg.io/api/games/{id}/{endpoint}"
+    else:
+        url = f"https://api.rawg.io/api/{endpoint}/{id}"
+
+    headers = {
+        'accept': 'application/json'
+    }
+
+    params = {
+        'key': API_KEY
+    }
+
+    for k,v in kwargs.items():
+        params[k] = v
+    
+    response = requests.get(url, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        resp_json = response.json()
+        return resp_json
+    else:
+        print(url)
+        print(f"Error extracting data - Error Code {response.status_code}")
+        return response
+    
+
 # Python Functions of Python Operators
 ################################################################################################
 
-# -------------------------------------------------------------------------[TODO]: Decide on Data storing location for different tasks
 def extract_game_list(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -50,6 +148,7 @@ def extract_game_list(**kwargs):
     if extraction_task == "initial_upload":
         # Data Date Range from 2018-01-01 to 2023-01-01
         # ----------------------------------------------- COMMENT OUT TO NOT OVER-REQUEST
+        # --------------------------------------------------------------------------- [TO DOCUMENT: REACH PAGE 250 API WILL FAIL]
         date_range = [
             # "2018-01-01,2018-06-30",
             # "2018-07-01,2018-12-31",
@@ -108,9 +207,6 @@ def extract_game_list(**kwargs):
     df_compiled_parent_platform = pd.DataFrame()
     df_compiled_genre = pd.DataFrame()
 
-    print("Extracting Dates:")
-    print(date_range)
-
     for range in date_range:
         continue_extract = True
         page = 1
@@ -149,45 +245,36 @@ def extract_game_list(**kwargs):
             else:
                 continue_extract = False
 
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "raw_data")
+
     # Store Data and Path Data Path to XCOM
     game_data_path = os.path.join(data_directory, "game_data.csv")
     df_compiled_game_data.to_csv(game_data_path, index=False)
-    ti.xcom_push("raw_game_data_path", game_data_path)
 
     game_platform_path = os.path.join(data_directory, "game_platform.csv")
     df_compiled_platforms.to_csv(game_platform_path, index=False)
-    ti.xcom_push("raw_game_platform_path", game_platform_path)
     
     game_store_path = os.path.join(data_directory, "game_store.csv")
     df_compiled_stores.to_csv(game_store_path, index=False)
-    ti.xcom_push("raw_game_store_path", game_store_path)
     
     game_rating_path = os.path.join(data_directory, "game_rating.csv")
     df_compiled_ratings.to_csv(game_rating_path, index=False)
-    ti.xcom_push("raw_game_rating_path", game_rating_path)
     
     game_status_path = os.path.join(data_directory, "game_status.csv")
     df_compiled_status.to_csv(game_status_path, index=False)
-    ti.xcom_push("raw_game_status_path", game_status_path)
 
     game_tag_path = os.path.join(data_directory, "game_tag.csv")
     df_compiled_tags.to_csv(game_tag_path, index=False)
-    ti.xcom_push("raw_game_tag_path", game_tag_path)
 
     game_esrb_path = os.path.join(data_directory, "game_esrb.csv")
     df_compiled_esrb.to_csv(game_esrb_path, index=False)
-    ti.xcom_push("raw_game_esrb_path", game_esrb_path)
 
     game_parent_platform_path = os.path.join(data_directory, "game_parent_platform.csv")
     df_compiled_parent_platform.to_csv(game_parent_platform_path, index=False)
-    ti.xcom_push("raw_game_parent_platform_path", game_parent_platform_path)
     
     game_genre_path = os.path.join(data_directory, "game_genre.csv")
     df_compiled_genre.to_csv(game_genre_path, index=False)
-    ti.xcom_push("raw_game_genre_path", game_genre_path)
-
-    # Pass Data Path to next Task
-    ti.xcom_push("game_data_extracted", len(df_compiled_game_data))
 
 
 
@@ -196,14 +283,12 @@ def extract_game_detail(**kwargs):
     ti = kwargs["ti"]
 
     # Read Game Data
-    game_data_path = ti.xcom_pull(task_ids='extract_game_list', key="raw_game_data_path")
-    print(game_data_path)
-    df_game_data = pd.read_csv(game_data_path)
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    df_game_data = pd.read_csv(os.path.join(root_data_directory, "raw_data", "game_data.csv"))
 
     # Dictionary mapping each id to slug incase id fails
     dct_id_slug = create_dictionary_from_df(df_game_data, "id", "slug")
     game_list_id = df_game_data["id"].unique().tolist()
-
 
     # Extract Data from API
     df_game_details_data = pd.DataFrame()
@@ -233,26 +318,24 @@ def extract_game_detail(**kwargs):
         if "reactions" in dct_game_details.keys():
             df_game_details_reactions = pd.concat([df_game_details_reactions, dct_game_details["reactions"]])
 
+    # Data Directory
+    data_directory = os.path.join(root_data_directory, "raw_data")
+
     # Store Data and Path Data Path to XCOM
     game_details_data_path = os.path.join(data_directory, f"game_details_data.csv")
     df_game_details_data.to_csv(game_details_data_path, index=False)
-    ti.xcom_push("raw_game_details_data_path", game_details_data_path)
     
     game_details_metacritic_path = os.path.join(data_directory, f"game_details_metacritic.csv")
     df_game_details_metacritic.to_csv(game_details_metacritic_path, index=False)
-    ti.xcom_push("raw_game_details_metacritic_path", game_details_metacritic_path)
     
     game_details_developer_path = os.path.join(data_directory, f"game_details_developer.csv")
     df_game_details_developers.to_csv(game_details_developer_path, index=False)
-    ti.xcom_push("raw_game_details_developer_path", game_details_developer_path)
         
     game_details_publisher_path = os.path.join(data_directory, f"game_details_publisher.csv")
     df_game_details_publishers.to_csv(game_details_publisher_path, index=False)
-    ti.xcom_push("raw_game_details_publisher_path", game_details_publisher_path)
     
     game_details_reaction_path = os.path.join(data_directory, f"game_details_reaction.csv")
     df_game_details_reactions.to_csv(game_details_reaction_path, index=False)
-    ti.xcom_push("raw_game_details_reaction_path", game_details_reaction_path)
 
 
 
@@ -261,8 +344,9 @@ def extract_publisher(**kwargs):
     ti = kwargs["ti"]
 
     # Read Game Details Publisher
-    raw_game_details_publisher_path = ti.xcom_pull(task_ids='extract_game_detail', key="raw_game_details_publisher_path")
-    df_game_publisher = pd.read_csv(raw_game_details_publisher_path)
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "raw_data")
+    df_game_publisher = pd.read_csv(os.path.join(root_data_directory, "raw_data", "game_details_publisher.csv"))
     lst_of_publishers = df_game_publisher["publisher_id"].unique().tolist()
 
     # Extract Data from API
@@ -278,11 +362,7 @@ def extract_publisher(**kwargs):
 
     # Export to raw_data folder
     publisher_data_path = os.path.join(data_directory, "publisher_data.csv")
-    df_publishers.to_csv(publisher_data_path, index=False)    
-
-    # Pass Data Path to next Task
-    ti.xcom_push("publisher_data_extracted", len(df_publishers))
-    ti.xcom_push("raw_genre_data_path", publisher_data_path)
+    df_publishers.to_csv(publisher_data_path, index=False)
 
 
 
@@ -290,24 +370,37 @@ def extract_genre(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
 
+    # Data Directory
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "raw_data")
+
+    # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+    if "tag_data.csv" in os.listdir(data_directory):
+        return
+
     # Extract Data from API
     genre_resp = get_list_response(RAWG_TOKEN, "genres", page_size=40)
     df_genre = pd.DataFrame(genre_resp["results"])
     df_genre_output = df_genre[["id", "name", "slug"]]
     
     # Export to raw_data folder
-    genre_data_path = os.path.join(data_directory, "genre_data.csv")
     df_genre_output.to_csv(os.path.join(data_directory, "genre_data.csv"), index=False)
-
-    # Pass Data Path to next Task
-    ti.xcom_push("genre_data_extracted", len(df_genre_output))
-    ti.xcom_push("raw_genre_data_path", genre_data_path)
 
 
 
 def extract_tag(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
+
+    # Data Directory
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "raw_data")
+
+    # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+    if "tag_data.csv" in os.listdir(data_directory):
+        return
 
     # Extract Data from API
     df_all_tags = pd.DataFrame()
@@ -327,15 +420,20 @@ def extract_tag(**kwargs):
     tag_data_path = os.path.join(data_directory, "tag_data.csv")
     df_tags_output.to_csv(tag_data_path, index=False)
 
-    # Pass Data Path to next Task
-    ti.xcom_push("tag_data_extracted", len(df_tags_output))
-    ti.xcom_push("raw_tag_data_path", tag_data_path)
-
 
 
 def extract_store(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
+
+    # Data Directory
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "raw_data")
+
+    # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+    if "store_data.csv" in os.listdir(data_directory):
+        return
 
     # Extract Data from API
     stores_resp = get_list_response(RAWG_TOKEN, "stores", page_size=40)
@@ -343,18 +441,22 @@ def extract_store(**kwargs):
     df_store_output = df_store[["id", "name", "domain", "slug"]].copy()
     
     # Export to raw_data folder
-    store_data_path = os.path.join(data_directory, "store_data.csv")
     df_store_output.to_csv(os.path.join(data_directory, "store_data.csv"), index=False)
-
-    # Pass Data Path to next Task
-    ti.xcom_push("store_data_extracted", len(df_store_output))
-    ti.xcom_push("raw_store_data_path", store_data_path)
 
 
 
 def extract_platform(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
+
+    # Data Directory
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "raw_data")
+
+    # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+    if "platform_data.csv" in os.listdir(data_directory):
+        return
 
     # Extract Data from API
     df_all_platforms = pd.DataFrame()
@@ -373,15 +475,20 @@ def extract_platform(**kwargs):
     platform_data_path = os.path.join(data_directory, "platform_data.csv")
     df_all_platforms.to_csv(platform_data_path, index=False)
 
-    # Pass Data Path to next Task
-    ti.xcom_push("platform_data_extracted", len(df_all_platforms))
-    ti.xcom_push("raw_platform_data_path", platform_data_path)
-
 
 
 def extract_parent_platform(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
+
+    # Data Directory
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "raw_data")
+
+    # If file already exist in the raw_data folder, terminate
+    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+    if "parent_platform_data.csv" in os.listdir(data_directory):
+        return
 
     # Extract Data from API
     parent_platforms_resp = get_list_response(RAWG_TOKEN, "platforms/lists/parents", page_size=40, ordering="-count")
@@ -408,7 +515,3 @@ def extract_parent_platform(**kwargs):
     
     parent_platform_platform_path = os.path.join(data_directory, "parent_platform_platform.csv")
     df_parent_platform_platform.to_csv(parent_platform_platform_path, index=False)
-    
-    # Pass Data Path to next Task
-    ti.xcom_push("raw_parent_platform_data_path", parent_platform_data_path)
-    ti.xcom_push("raw_parent_platform_platform_data_path", parent_platform_platform_path)
