@@ -139,7 +139,8 @@ def transform_game_list_api(resp_json):
 		# ======================================================
 		if row["parent_platforms"] != None and type(row["parent_platforms"]) != float:
 			for platform in row["parent_platforms"]:
-				df_parent_platforms = pd.concat([df_parent_platforms, pd.DataFrame({"game_id": [row["id"]], "platform": \
+				# ---------------------------------------------------------------------------------------------[TO TEST: CHANGED THIS "PLATFORM" INSTEAD OF "PARENT_PLATFORM_ID"]
+				df_parent_platforms = pd.concat([df_parent_platforms, pd.DataFrame({"game_id": [row["id"]], "parent_platform_id": \
 																					[platform["platform"]["id"]]})])
 
 		# genres
