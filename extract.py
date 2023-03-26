@@ -4,9 +4,10 @@
 # Import Libraries and Transform Functions
 import pandas as pd
 import os
-
+import re
 import requests
 from datetime import datetime
+import time
 
 import sys
 root_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,6 +27,16 @@ load_dotenv()
 RAWG_TOKEN = os.getenv('RAWG_TOKEN')
 
 data_directory = os.path.join(os.getcwd(), "raw_data")
+
+
+# Database Connection Setup
+################################################################################################
+import os
+from dotenv import load_dotenv
+dotenv = load_dotenv()
+CONNECTION_STRING = os.getenv("MYSQL_CONNECTION_STRING")
+from database import Base
+from load import session_engine_from_connection_string
 
 
 # Functions Used to Perform API Request
@@ -66,6 +77,16 @@ def get_list_response(API_KEY: str, endpoint: str, **kwargs):
         params[k] = v
     
     response = requests.get(url, headers=headers, params=params)
+
+    try:
+        # Raise Exception if not status 200
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        # wait another 10 sec - to handle status 502
+        time.sleep(5)
+        
+        # try again
+        response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
         resp_json = response.json()
@@ -73,6 +94,7 @@ def get_list_response(API_KEY: str, endpoint: str, **kwargs):
     else:
         print(f"Error extracting data - Error Code {response.status_code}")
         return response
+
 
 
 def get_detail_response(API_KEY, endpoint, id, game_info=False, **kwargs):
@@ -116,6 +138,16 @@ def get_detail_response(API_KEY, endpoint, id, game_info=False, **kwargs):
         params[k] = v
     
     response = requests.get(url, headers=headers, params=params)
+
+    try:
+        # Raise Exception if not status 200
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        # wait another 10 sec - to handle status 502
+        time.sleep(5)
+        
+        # try again
+        response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
         resp_json = response.json()
@@ -126,7 +158,7 @@ def get_detail_response(API_KEY, endpoint, id, game_info=False, **kwargs):
         return response
     
 
-# Python Functions of Python Operators
+# Extract Functions
 ################################################################################################
 
 def extract_game_list(**kwargs):
@@ -346,13 +378,20 @@ def extract_publisher(**kwargs):
     # Read Game Details Publisher
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
     data_directory = os.path.join(root_data_directory, "raw_data")
-    df_game_publisher = pd.read_csv(os.path.join(root_data_directory, "raw_data", "game_details_publisher.csv"))
-    lst_of_publishers = df_game_publisher["publisher_id"].unique().tolist()
+
+    # Extract new publishers (for monthly upload, for initial upload will be None)
+    publishers_to_extract = ti.xcom_pull(task_ids='check_new_publisher', key="to_extract")
+
+    if publishers_to_extract == None:
+        df_game_publisher = pd.read_csv(os.path.join(root_data_directory, "raw_data", "game_details_publisher.csv"))
+        lst_of_publishers = df_game_publisher["publisher_id"].unique().tolist()
+    else:
+        lst_of_publishers = publishers_to_extract
 
     # Extract Data from API
     df_publishers = pd.DataFrame()
     for i in range(0, len(lst_of_publishers)):
-        id = lst_of_publishers[i]
+        id = int(lst_of_publishers[i])
         publishers_json = get_detail_response(
                                             RAWG_TOKEN, 
                                             "publishers", 
@@ -361,11 +400,15 @@ def extract_publisher(**kwargs):
         df_publishers = pd.concat([df_publishers, df_curr_publisher])
 
     # Export to raw_data folder
+    print(f"Extracted {len(df_publishers)} publisher data")
+    if len(df_publishers) == 0:
+        df_genre_output = pd.DataFrame(columns=["id", "name", "slug", "games_count", "image_background", "description"])
     publisher_data_path = os.path.join(data_directory, "publisher_data.csv")
-    df_publishers.to_csv(publisher_data_path, index=False)
+    df_publishers.to_csv(publisher_data_path, index=False)    
 
 
 
+# ---------------------------------------------------------------------------------------------[TODO: POTENTIALLY COMBINE INTO 1 FUNCTION]
 def extract_genre(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -374,21 +417,48 @@ def extract_genre(**kwargs):
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
     data_directory = os.path.join(root_data_directory, "raw_data")
 
-    # If file already exist in the raw_data folder, terminate
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-    if "tag_data.csv" in os.listdir(data_directory):
-        return
+    # Extract new genre (for monthly upload, for initial upload will be None)
+    genre_to_extract = ti.xcom_pull(task_ids='check_new_genre', key="to_extract")
 
-    # Extract Data from API
-    genre_resp = get_list_response(RAWG_TOKEN, "genres", page_size=40)
-    df_genre = pd.DataFrame(genre_resp["results"])
-    df_genre_output = df_genre[["id", "name", "slug"]]
+    if genre_to_extract == None:
+        #### Initial Upload
+
+        # If file already exist in the raw_data folder, terminate
+        # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+        if "tag_data.csv" in os.listdir(data_directory):
+            return
+
+        # Extract Data from API
+        genre_resp = get_list_response(RAWG_TOKEN, "genres", page_size=40)
+        df_genre = pd.DataFrame(genre_resp["results"])
+        df_genre_output = df_genre[["id", "name", "slug"]]
+        
+        # Export to raw_data folder
+        df_genre_output.to_csv(os.path.join(data_directory, "genre_data.csv"), index=False)
     
-    # Export to raw_data folder
-    df_genre_output.to_csv(os.path.join(data_directory, "genre_data.csv"), index=False)
+    else:
+        #### Monthly Upload
+        df_genre = pd.DataFrame()
+        for i in range(0, len(genre_to_extract)):
+            id = int(genre_to_extract[i])
+            genre_json = get_detail_response(
+                                        RAWG_TOKEN, 
+                                        "genres",
+                                        id)
+            df_curr_genre = pd.DataFrame(genre_json, index=[0])
+            df_genre = pd.concat([df_genre, df_curr_genre])
+
+        # Export to raw_data folder
+        print(f"Extracted {len(df_genre)} genre data")
+        if len(df_genre) == 0:
+            df_genre_output = pd.DataFrame(columns=["id", "name", "slug"])
+        else:
+            df_genre_output = df_genre[["id", "name", "slug"]]
+        df_genre_output.to_csv(os.path.join(data_directory, "genre_data.csv"), index=False)
 
 
 
+# ---------------------------------------------------------------------------------------------[TODO: POTENTIALLY COMBINE INTO 1 FUNCTION]
 def extract_tag(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -397,31 +467,58 @@ def extract_tag(**kwargs):
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
     data_directory = os.path.join(root_data_directory, "raw_data")
 
-    # If file already exist in the raw_data folder, terminate
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-    if "tag_data.csv" in os.listdir(data_directory):
-        return
+    # Extract new tag (for monthly upload, for initial upload will be None)
+    tag_to_extract = ti.xcom_pull(task_ids='check_new_tag', key="to_extract")
 
-    # Extract Data from API
-    df_all_tags = pd.DataFrame()
-    continue_extract = True
-    page = 1
-    while continue_extract:
-        tags_resp = get_list_response(RAWG_TOKEN, "tags", page_size=40, page=page)
-        df_all_tags = pd.concat([df_all_tags, pd.DataFrame(tags_resp["results"])])
+    if tag_to_extract == None:
+        #### Initial Upload
+
+        # If file already exist in the raw_data folder, terminate
+        # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+        if "tag_data.csv" in os.listdir(data_directory):
+            return
+
+        # Extract Data from API
+        df_all_tags = pd.DataFrame()
+        continue_extract = True
+        page = 1
+        while continue_extract:
+            tags_resp = get_list_response(RAWG_TOKEN, "tags", page_size=40, page=page)
+            df_all_tags = pd.concat([df_all_tags, pd.DataFrame(tags_resp["results"])])
+            
+            if tags_resp["next"] != None:
+                page += 1
+            else:
+                continue_extract = False
+        df_tags_output = df_all_tags[["id", "name", "slug"]].copy()
         
-        if tags_resp["next"] != None:
-            page += 1
+        # Export to raw_data folder
+        tag_data_path = os.path.join(data_directory, "tag_data.csv")
+        df_tags_output.to_csv(tag_data_path, index=False)
+
+    else:
+        #### Monthly Upload
+        df_tag = pd.DataFrame()
+        for i in range(0, len(tag_to_extract)):
+            id = int(tag_to_extract[i])
+            tag_json = get_detail_response(
+                                        RAWG_TOKEN, 
+                                        "tags",
+                                        id)
+            df_curr_tag = pd.DataFrame(tag_json, index=[0])
+            df_tag = pd.concat([df_tag, df_curr_tag])
+
+        # Export to raw_data folder
+        print(f"Extracted {len(df_tag)} tag data")
+        if len(df_tag) == 0:
+            df_tag_output = pd.DataFrame(columns=["id", "name", "slug"])
         else:
-            continue_extract = False
-    df_tags_output = df_all_tags[["id", "name", "slug"]].copy()
-    
-    # Export to raw_data folder
-    tag_data_path = os.path.join(data_directory, "tag_data.csv")
-    df_tags_output.to_csv(tag_data_path, index=False)
+            df_tag_output = df_tag[["id", "name", "slug"]]
+        df_tag_output.to_csv(os.path.join(data_directory, "tag_data.csv"), index=False)
 
 
 
+# ---------------------------------------------------------------------------------------------[TODO: POTENTIALLY COMBINE INTO 1 FUNCTION]
 def extract_store(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -430,21 +527,47 @@ def extract_store(**kwargs):
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
     data_directory = os.path.join(root_data_directory, "raw_data")
 
-    # If file already exist in the raw_data folder, terminate
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-    if "store_data.csv" in os.listdir(data_directory):
-        return
+    # Extract new store (for monthly upload, for initial upload will be None)
+    store_to_extract = ti.xcom_pull(task_ids='check_new_store', key="to_extract")
 
-    # Extract Data from API
-    stores_resp = get_list_response(RAWG_TOKEN, "stores", page_size=40)
-    df_store = pd.DataFrame(stores_resp["results"])
-    df_store_output = df_store[["id", "name", "domain", "slug"]].copy()
-    
-    # Export to raw_data folder
-    df_store_output.to_csv(os.path.join(data_directory, "store_data.csv"), index=False)
+    if store_to_extract == None:
+        #### Initial Upload
+
+        # If file already exist in the raw_data folder, terminate
+        # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+        if "store_data.csv" in os.listdir(data_directory):
+            return
+
+        # Extract Data from API
+        stores_resp = get_list_response(RAWG_TOKEN, "stores", page_size=40)
+        df_store = pd.DataFrame(stores_resp["results"])
+        df_store_output = df_store[["id", "name", "domain", "slug"]].copy()
+        
+        # Export to raw_data folder
+        df_store_output.to_csv(os.path.join(data_directory, "store_data.csv"), index=False)
+    else:
+        #### Monthly Upload
+        df_store = pd.DataFrame()
+        for i in range(0, len(store_to_extract)):
+            id = int(store_to_extract[i])
+            store_json = get_detail_response(
+                                        RAWG_TOKEN, 
+                                        "stores",
+                                        id)
+            df_curr_store = pd.DataFrame(store_json, index=[0])
+            df_store = pd.concat([df_store, df_curr_store])
+
+        # Export to raw_data folder
+        print(f"Extracted {len(df_store)} store data")
+        if len(df_store) == 0:
+            df_store_output = pd.DataFrame(columns=["id", "name", "domain", "slug"])
+        else:
+            df_store_output = df_store[["id", "name", "domain", "slug"]]
+        df_store_output.to_csv(os.path.join(data_directory, "store_data.csv"), index=False)
 
 
 
+# ---------------------------------------------------------------------------------------------[TODO: POTENTIALLY COMBINE INTO 1 FUNCTION]
 def extract_platform(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -453,27 +576,50 @@ def extract_platform(**kwargs):
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
     data_directory = os.path.join(root_data_directory, "raw_data")
 
-    # If file already exist in the raw_data folder, terminate
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-    if "platform_data.csv" in os.listdir(data_directory):
-        return
+    # Extract new platform (for monthly upload, for initial upload will be None)
+    platform_to_extract = ti.xcom_pull(task_ids='check_new_platform', key="to_extract")
 
-    # Extract Data from API
-    df_all_platforms = pd.DataFrame()
-    continue_extract = True
-    page = 1
-    while continue_extract:
-        platforms_resp = get_list_response(RAWG_TOKEN, "platforms", page_size=40, page=page)
-        df_all_platforms = pd.concat([df_all_platforms, pd.DataFrame(platforms_resp["results"])])
+    if platform_to_extract == None:
+        #### Initial Upload
+
+        # If file already exist in the raw_data folder, terminate
+        # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+        if "platform_data.csv" in os.listdir(data_directory):
+            return
+
+        # Extract Data from API
+        df_all_platforms = pd.DataFrame()
+        continue_extract = True
+        page = 1
+        while continue_extract:
+            platforms_resp = get_list_response(RAWG_TOKEN, "platforms", page_size=40, page=page)
+            df_all_platforms = pd.concat([df_all_platforms, pd.DataFrame(platforms_resp["results"])])
+            
+            if platforms_resp["next"] != None:
+                page += 1
+            else:
+                continue_extract = False
+
+        # Export to raw_data folder
+        platform_data_path = os.path.join(data_directory, "platform_data.csv")
+        df_all_platforms.to_csv(platform_data_path, index=False)
+
+    else:
+        #### Monthly Upload
+        df_platform = pd.DataFrame()
+        for i in range(0, len(platform_to_extract)):
+            id = int(platform_to_extract[i])
+            platform_json = get_detail_response(
+                                        RAWG_TOKEN, 
+                                        "platforms",
+                                        id)
+            df_curr_platform = pd.DataFrame(platform_json, index=[0])
+            df_platform = pd.concat([df_platform, df_curr_platform])
         
-        if platforms_resp["next"] != None:
-            page += 1
-        else:
-            continue_extract = False
-
-    # Export to raw_data folder
-    platform_data_path = os.path.join(data_directory, "platform_data.csv")
-    df_all_platforms.to_csv(platform_data_path, index=False)
+        print(f"Extracted {len(df_platform)} platform data")
+        if len(df_platform) == 0:
+            df_platform = pd.DataFrame(columns=["id", "name", "slug", "games_count", "image_background", "image", "year_start", "year_end", "games"])
+        df_platform.to_csv(os.path.join(data_directory, "platform_data.csv"), index=False)
 
 
 
@@ -515,3 +661,51 @@ def extract_parent_platform(**kwargs):
     
     parent_platform_platform_path = os.path.join(data_directory, "parent_platform_platform.csv")
     df_parent_platform_platform.to_csv(parent_platform_platform_path, index=False)
+
+
+
+# "Check if Exist" Function
+################################################################################################
+
+def check_new_records(**kwargs):
+    # Task Instance
+    ti = kwargs["ti"]
+
+    # Data Directory
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "raw_data")
+    
+    # entity to check for new record
+    entity =  kwargs["entity"]
+    file_name = kwargs["file_name"]
+
+    # database session
+    session, engine = session_engine_from_connection_string(CONNECTION_STRING)
+    conn = engine.connect()
+
+    # Extract records from Newly Fetched game-records
+    df_game_entity_rs = pd.read_csv(os.path.join(data_directory, file_name))
+    df_game_entity_rs[f"{entity}_id"] = df_game_entity_rs[f"{entity}_id"].astype(int)
+    lst_of_entity = df_game_entity_rs[f"{entity}_id"].unique().tolist()
+
+    # SQL Command to check for Records that Exist in Schema
+    # ---------------------------------------------------------------------------------------------[TO REVIEW IF ITS THE BEST QUERY]
+    sql_query = f"SELECT * FROM {entity} WHERE id IN {lst_of_entity}"
+    sql_query = re.sub("\[", "(", sql_query)
+    sql_query = re.sub("\]", ")", sql_query)
+    df_existing_entity = pd.read_sql(sql_query, session.bind)
+    
+    # Extract New Publishers
+    df_new_entity = df_game_entity_rs[~df_game_entity_rs[f"{entity}_id"].isin(df_existing_entity.id.tolist())]
+    new_entity = df_new_entity[f"{entity}_id"].unique().tolist()
+
+    # output to Log
+    print(f"{new_entity} new {entity} to be extracted")
+
+    # Push to Extract Task
+    ti.xcom_push("to_extract", new_entity)
+
+    session.close()
+    conn.close()
+
+    return new_entity
