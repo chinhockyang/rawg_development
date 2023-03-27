@@ -3,6 +3,7 @@
 # Import Libraries and Database Tools
 import pandas as pd
 import numpy as np
+import re
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database import *
@@ -45,8 +46,7 @@ def convert_df_to_lst_of_table_objects(df, Table):
     return [Table(**{k: v for k, v in row.items() if not np.array(pd.isnull(v)).any()}) for row in df.to_dict("records")]
 
 
-def upload_data(session, data_path, Table):
-    df = pd.read_csv(data_path)
+def upload_data(session, df, Table):
     obj = convert_df_to_lst_of_table_objects(df, Table)
 
     if len(obj) > 0:
@@ -76,10 +76,47 @@ def session_engine_from_connection_string(conn_string):
 # Python Functions of Python Operators
 ################################################################################################
 
-def load_data(**kwargs):
+def create_database_tables():
+    # create session and engine
+    session, engine = session_engine_from_connection_string(CONNECTION_STRING)
+    conn = engine.connect()
+
+    # tables to be created
+    table_objects = [
+        Game.__table__,
+        Publisher.__table__,
+        Genre.__table__,
+        Tag.__table__,
+        Store.__table__,
+        Platform.__table__,
+        ParentPlatform.__table__,
+        Rating.__table__,
+        
+        GamePublisher.__table__,
+        GameGenre.__table__,
+        GameTag.__table__,
+        GameStore.__table__,
+        GamePlatform.__table__,
+        GameRating.__table__,
+    ]
+    # Drop All Tables
+    Base.metadata.drop_all(engine, table_objects)
+
+    # Create All Tables
+    Base.metadata.create_all(engine, table_objects)
+
+    session.close()
+    conn.close()
+
+
+def load_entity_data(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
-    
+
+    # Table to upload
+    table = kwargs["table"]
+    file_name = kwargs["file_name"]
+
     # Data directory
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
     data_directory = os.path.join(root_data_directory, "transformed_data")
@@ -88,99 +125,45 @@ def load_data(**kwargs):
     session, engine = session_engine_from_connection_string(CONNECTION_STRING)
     conn = engine.connect()
 
-    # Initial Upload
-    if "initial_upload" in root_data_directory:
-        print("Recreating Schema")
-
-        # tables to be created
-        table_objects = [
-            Game.__table__,
-            Publisher.__table__,
-            Genre.__table__,
-            Tag.__table__,
-            Store.__table__,
-            Platform.__table__,
-            ParentPlatform.__table__,
-            Rating.__table__,
-            
-            GamePublisher.__table__,
-            GameGenre.__table__,
-            GameTag.__table__,
-            GameStore.__table__,
-            GamePlatform.__table__,
-            GameRating.__table__,
-        ]
-        # Drop All Tables
-        Base.metadata.drop_all(engine, table_objects)
-
-        # Create All Tables
-        Base.metadata.create_all(engine, table_objects)
-
     # Game Entity
-    game_data_path = os.path.join(data_directory, "entity_game.csv")
-    upload_data(session, game_data_path, Game)
+    data_path = os.path.join(data_directory, file_name)
+    df = pd.read_csv(data_path)
+    upload_data(session, df, table)
 
-    # Publisher Entity
-    publisher_data_path = os.path.join(data_directory, "entity_publisher.csv")
-    upload_data(session, publisher_data_path, Publisher)
 
-    # Genre Entity
-    genre_data_path = os.path.join(data_directory, "entity_genre.csv")
-    upload_data(session, genre_data_path, Genre)
+def load_game_relationship_data(**kwargs):
+    # Task Instance
+    ti = kwargs["ti"]
 
-    # Tag Entity
-    tag_data_path = os.path.join(data_directory, "entity_tag.csv")
-    upload_data(session, tag_data_path, Tag)
+    # Entity (lowercased name of each table)
+    entity = kwargs["entity"]
+    entity_col_name = f"{entity}_id"
 
-    # Store Entity
-    store_data_path = os.path.join(data_directory, "entity_store.csv")
-    upload_data(session, store_data_path, Store)
+    # Table to upload
+    table = kwargs["table"]
+    file_name = kwargs["file_name"]
 
-    # Parent Platform Entity
-    parent_platform_data_path = os.path.join(data_directory, "entity_parent_platform.csv")
-    upload_data(session, parent_platform_data_path, ParentPlatform)
+    # Data directory
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "transformed_data")
 
-    # Platform Entity
-    platform_data_path = os.path.join(data_directory, "entity_platform.csv")
-    upload_data(session, platform_data_path, Platform)
+    # create session and engine
+    session, engine = session_engine_from_connection_string(CONNECTION_STRING)
+    conn = engine.connect()
 
-    # Rating
-    rating_data_path = os.path.join(data_directory, "entity_rating.csv")
-    upload_data(session, rating_data_path, Rating)
+    file_path = os.path.join(data_directory, file_name)
+    df_relationship = pd.read_csv(file_path)
 
-    # GamePublisher
-    game_publisher_data_path = os.path.join(data_directory, "rs_game_publisher.csv")
-    upload_data(session, game_publisher_data_path, GamePublisher)
+    lst_of_records = df_relationship[entity_col_name].unique().tolist()
 
-    # GameGenre
-    game_genre_data_path = os.path.join(data_directory, "rs_game_genre.csv")
-    upload_data(session, game_genre_data_path, GameGenre)
+    # SQL Command to check for Records that Exist in Schema
+    sql_query = f"SELECT * FROM {entity} WHERE id IN {lst_of_records}"
+    sql_query = re.sub("\[", "(", sql_query)
+    sql_query = re.sub("\]", ")", sql_query)
+    df_existing_records = pd.read_sql(sql_query, session.bind)
 
-    # GameTag 
-    # ----------------------------------------------------------------------[SPECIAL CASE]: Tag info is very unstable (Some tags in Game-Tag isn't even in Tag API)
-    game_tag_data_path = os.path.join(data_directory, "rs_game_tag.csv")
-    df_tag = pd.read_csv(tag_data_path)
-    df_game = pd.read_csv(game_data_path)
-    df_game_tag = pd.read_csv(game_tag_data_path)
-    df_game_tag = df_game_tag[df_game_tag["tag_id"].isin(df_tag["id"].unique().tolist())]
-    df_game_tag = df_game_tag[df_game_tag["game_id"].isin(df_game["id"].unique().tolist())]
-    obj = convert_df_to_lst_of_table_objects(df_game_tag, GameTag)
+    # Subset for those records that are in the Entity's DB (Prevent ForeignKey error)
+    df_relationship_subset = df_relationship[df_relationship[entity_col_name].isin(df_existing_records.id.tolist())]
 
-    if len(obj) > 0:
-        session.add_all(obj)
-        session.commit()
-        print(f"{len(obj)} objects uploaded into {GameTag.__tablename__.title()}")
-    else:
-        print(f"Fail to upload into {GameTag.__tablename__.title()}")
-
-    # GameStore
-    game_store_data_path = os.path.join(data_directory, "rs_game_store.csv")
-    upload_data(session, game_store_data_path, GameStore)
-
-    # GamePlatform
-    game_platform_data_path = os.path.join(data_directory, "rs_game_platform.csv")
-    upload_data(session, game_platform_data_path, GamePlatform)    
-
-    # GameRating
-    game_rating_data_path = os.path.join(data_directory, "rs_game_rating.csv")
-    upload_data(session, game_rating_data_path, GameRating)
+    # Upload relationship data
+    upload_data(session, df_relationship_subset, table)
