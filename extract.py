@@ -402,7 +402,7 @@ def extract_publisher(**kwargs):
     # Export to raw_data folder
     print(f"Extracted {len(df_publishers)} publisher data")
     if len(df_publishers) == 0:
-        df_genre_output = pd.DataFrame(columns=["id", "name", "slug", "games_count", "image_background", "description"])
+        df_publishers = pd.DataFrame(columns=["id", "name", "slug", "games_count", "image_background", "description"])
     publisher_data_path = os.path.join(data_directory, "publisher_data.csv")
     df_publishers.to_csv(publisher_data_path, index=False)    
 
@@ -425,7 +425,7 @@ def extract_genre(**kwargs):
 
         # If file already exist in the raw_data folder, terminate
         # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-        if "tag_data.csv" in os.listdir(data_directory):
+        if "genre_data.csv" in os.listdir(data_directory):
             return
 
         # Extract Data from API
@@ -631,12 +631,32 @@ def extract_parent_platform(**kwargs):
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
     data_directory = os.path.join(root_data_directory, "raw_data")
 
-    # If file already exist in the raw_data folder, terminate
+    # Extract new platform (for monthly upload, for initial upload will be None)
+    platform_to_extract = ti.xcom_pull(task_ids='check_new_platform', key="to_extract")
+
+    # Monthly Upload
+    if platform_to_extract != None:
+        # No new Platforms - No need to extract Parent Platform API
+        if len(platform_to_extract) == 0:
+            # return empty dataframes / Skip extraction to make Pipeline faster and prevent unnecessary querying
+            df_parent_platforms_output = pd.DataFrame(columns=["id", "name", "slug"])
+            df_parent_platform_platform = pd.DataFrame(columns=["platform_id", "platform_name", "platform_slug", "parent_platform_id"])
+
+            # Export to raw_data folder
+            parent_platform_data_path = os.path.join(data_directory, "parent_platform_data.csv")
+            print(f"{len(df_parent_platforms_output)} parent platforms to extract")
+            df_parent_platforms_output.to_csv(parent_platform_data_path, index=False)
+            
+            parent_platform_platform_path = os.path.join(data_directory, "parent_platform_platform.csv")
+            df_parent_platform_platform.to_csv(parent_platform_platform_path, index=False)
+            return
+
+    # If file already exist in the raw_data folder, terminate (Initial Upload to save time and token quota)
     # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
     if "parent_platform_data.csv" in os.listdir(data_directory):
         return
 
-    # Extract Data from API
+    # Extract Data from API (Parent Platform Full List)
     parent_platforms_resp = get_list_response(RAWG_TOKEN, "platforms/lists/parents", page_size=40, ordering="-count")
     df_parent_platforms = pd.DataFrame(parent_platforms_resp["results"])
 
@@ -655,8 +675,17 @@ def extract_parent_platform(**kwargs):
     # Dataframe: Parent Platform - Parent Relationship Data
     df_parent_platform_platform.rename(columns={"id": "parent_platform_id"}, inplace=True)
 
+    # Monthly Upload
+    if platform_to_extract:
+        if len(platform_to_extract) > 0:
+            # Filter for only the new Parent Platform
+            platform_to_extract = [int(id) for id in platform_to_extract]
+            df_parent_platform_platform = df_parent_platform_platform[df_parent_platform_platform["platform_id"].isin(platform_to_extract)]
+            df_parent_platforms_output = df_parent_platforms_output[df_parent_platforms_output["id"].isin(df_parent_platform_platform["parent_platform_id"].unique().tolist())]
+
     # Export to raw_data folder
     parent_platform_data_path = os.path.join(data_directory, "parent_platform_data.csv")
+    print(f"{len(df_parent_platforms_output)} parent platforms to extract")
     df_parent_platforms_output.to_csv(parent_platform_data_path, index=False)
     
     parent_platform_platform_path = os.path.join(data_directory, "parent_platform_platform.csv")
@@ -666,6 +695,102 @@ def extract_parent_platform(**kwargs):
 
 # "Check if Exist" Function
 ################################################################################################
+
+
+def check_new_games(**kwargs):
+    # Task Instance
+    ti = kwargs["ti"]
+
+    # Data Directory
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "raw_data")
+
+    # database session
+    session, engine = session_engine_from_connection_string(CONNECTION_STRING)
+    conn = engine.connect()
+
+    # Game related raw files
+    df_game_data = pd.read_csv(os.path.join(data_directory, "game_data.csv"))
+    df_game_platform = pd.read_csv(os.path.join(data_directory, "game_platform.csv"))
+    df_game_store = pd.read_csv(os.path.join(data_directory, "game_store.csv"))
+    df_game_rating = pd.read_csv(os.path.join(data_directory, "game_rating.csv"))
+    df_game_status = pd.read_csv(os.path.join(data_directory, "game_status.csv"))
+    df_game_tag = pd.read_csv(os.path.join(data_directory, "game_tag.csv"))
+    df_game_esrb = pd.read_csv(os.path.join(data_directory, "game_esrb.csv"))
+    df_game_parent_platform = pd.read_csv(os.path.join(data_directory, "game_parent_platform.csv"))
+    df_game_genre = pd.read_csv(os.path.join(data_directory, "game_genre.csv"))
+
+    # Unique Games
+    lst_of_game_id = df_game_data["id"].unique().tolist()
+
+    # SQL Command to check for Records that Exist in Schema
+    sql_query = f"SELECT id FROM game WHERE id IN {lst_of_game_id}"
+    sql_query = re.sub("\[", "(", sql_query)
+    sql_query = re.sub("\]", ")", sql_query)
+    df_existing_games = pd.read_sql(sql_query, session.bind)
+
+    # ---------------------------------------------------------------------------------------------[TO DROP GAMES THAT ARE ACTUALLY NOT NEW (API PROBLEM)]
+    lst_of_existing_game_id = df_existing_games.id.unique().tolist()
+    
+    # Remove Games that are already in DB
+    df_game_data = df_game_data[~df_game_data["id"].isin(lst_of_existing_game_id)]
+    df_game_platform = df_game_platform[~df_game_platform["game_id"].isin(lst_of_existing_game_id)]
+    df_game_store = df_game_store[~df_game_store["game_id"].isin(lst_of_existing_game_id)]
+    df_game_rating = df_game_rating[~df_game_rating["game_id"].isin(lst_of_existing_game_id)]
+    df_game_status = df_game_status[~df_game_status["game_id"].isin(lst_of_existing_game_id)]
+    df_game_tag = df_game_tag[~df_game_tag["game_id"].isin(lst_of_existing_game_id)]
+    df_game_esrb = df_game_esrb[~df_game_esrb["game_id"].isin(lst_of_existing_game_id)]
+    df_game_parent_platform = df_game_parent_platform[~df_game_parent_platform["game_id"].isin(lst_of_existing_game_id)]
+    df_game_genre = df_game_genre[~df_game_genre["game_id"].isin(lst_of_existing_game_id)]
+
+    # Export to raw_data folder
+    df_game_data.to_csv(os.path.join(data_directory, "game_data.csv"), index=False)
+    df_game_platform.to_csv(os.path.join(data_directory, "game_platform.csv"), index=False)
+    df_game_store.to_csv(os.path.join(data_directory, "game_store.csv"), index=False)
+    df_game_rating.to_csv(os.path.join(data_directory, "game_rating.csv"), index=False)
+    df_game_status.to_csv(os.path.join(data_directory, "game_status.csv"), index=False)
+    df_game_tag.to_csv(os.path.join(data_directory, "game_tag.csv"), index=False)
+    df_game_esrb.to_csv(os.path.join(data_directory, "game_esrb.csv"), index=False)
+    df_game_parent_platform.to_csv(os.path.join(data_directory, "game_parent_platform.csv"), index=False)
+    df_game_genre.to_csv(os.path.join(data_directory, "game_genre.csv"), index=False)
+
+    session.close()
+    conn.close()
+
+
+    
+## to be placed after transformed
+def check_new_rating(**kwargs):
+    # Task Instance
+    ti = kwargs["ti"]
+
+    # Data Directory
+    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
+    data_directory = os.path.join(root_data_directory, "transformed_data")
+
+    # database session
+    session, engine = session_engine_from_connection_string(CONNECTION_STRING)
+    conn = engine.connect()
+
+    # Rating (located in transformed_data folder)
+    df_rating = pd.read_csv(os.path.join(data_directory, "entity_rating.csv"))
+    df_rating["id"] = df_rating["id"].astype(int)
+    lst_of_rating = df_rating["id"].unique().tolist()
+
+    # SQL Command to check for Records that Exist in Schema
+    sql_query = f"SELECT id FROM rating WHERE id IN {lst_of_rating}"
+    sql_query = re.sub("\[", "(", sql_query)
+    sql_query = re.sub("\]", ")", sql_query)
+    df_existing_rating = pd.read_sql(sql_query, session.bind)
+
+    # filter for new rating and send new filtered file back to transformed_data
+    df_new_rating = df_rating[~df_rating["id"].isin(df_existing_rating.id.tolist())]
+    df_new_rating.to_csv(os.path.join(data_directory, "entity_rating.csv"))
+
+    session.close()
+    conn.close()
+
+
 
 def check_new_records(**kwargs):
     # Task Instance
@@ -690,7 +815,7 @@ def check_new_records(**kwargs):
 
     # SQL Command to check for Records that Exist in Schema
     # ---------------------------------------------------------------------------------------------[TO REVIEW IF ITS THE BEST QUERY]
-    sql_query = f"SELECT * FROM {entity} WHERE id IN {lst_of_entity}"
+    sql_query = f"SELECT id FROM {entity} WHERE id IN {lst_of_entity}"
     sql_query = re.sub("\[", "(", sql_query)
     sql_query = re.sub("\]", ")", sql_query)
     df_existing_entity = pd.read_sql(sql_query, session.bind)
@@ -700,7 +825,7 @@ def check_new_records(**kwargs):
     new_entity = df_new_entity[f"{entity}_id"].unique().tolist()
 
     # output to Log
-    print(f"{new_entity} new {entity} to be extracted")
+    print(f"{len(new_entity)} new {entity} to be extracted")
 
     # Push to Extract Task
     ti.xcom_push("to_extract", new_entity)
