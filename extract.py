@@ -697,9 +697,12 @@ def extract_parent_platform(**kwargs):
 ################################################################################################
 
 
-def check_new_games(**kwargs):
+def check_games(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
+    
+    # Boolean to set if this function is checking for new or existing games
+    check_for_new = kwargs["check_for_new"]
 
     # Data Directory
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
@@ -732,16 +735,28 @@ def check_new_games(**kwargs):
     # ---------------------------------------------------------------------------------------------[TO DROP GAMES THAT ARE ACTUALLY NOT NEW (API PROBLEM)]
     lst_of_existing_game_id = df_existing_games.id.unique().tolist()
     
-    # Remove Games that are already in DB
-    df_game_data = df_game_data[~df_game_data["id"].isin(lst_of_existing_game_id)]
-    df_game_platform = df_game_platform[~df_game_platform["game_id"].isin(lst_of_existing_game_id)]
-    df_game_store = df_game_store[~df_game_store["game_id"].isin(lst_of_existing_game_id)]
-    df_game_rating = df_game_rating[~df_game_rating["game_id"].isin(lst_of_existing_game_id)]
-    df_game_status = df_game_status[~df_game_status["game_id"].isin(lst_of_existing_game_id)]
-    df_game_tag = df_game_tag[~df_game_tag["game_id"].isin(lst_of_existing_game_id)]
-    df_game_esrb = df_game_esrb[~df_game_esrb["game_id"].isin(lst_of_existing_game_id)]
-    df_game_parent_platform = df_game_parent_platform[~df_game_parent_platform["game_id"].isin(lst_of_existing_game_id)]
-    df_game_genre = df_game_genre[~df_game_genre["game_id"].isin(lst_of_existing_game_id)]
+    if check_for_new:
+        # Remove Games that are already in DB
+        df_game_data = df_game_data[~df_game_data["id"].isin(lst_of_existing_game_id)]
+        df_game_platform = df_game_platform[~df_game_platform["game_id"].isin(lst_of_existing_game_id)]
+        df_game_store = df_game_store[~df_game_store["game_id"].isin(lst_of_existing_game_id)]
+        df_game_rating = df_game_rating[~df_game_rating["game_id"].isin(lst_of_existing_game_id)]
+        df_game_status = df_game_status[~df_game_status["game_id"].isin(lst_of_existing_game_id)]
+        df_game_tag = df_game_tag[~df_game_tag["game_id"].isin(lst_of_existing_game_id)]
+        df_game_esrb = df_game_esrb[~df_game_esrb["game_id"].isin(lst_of_existing_game_id)]
+        df_game_parent_platform = df_game_parent_platform[~df_game_parent_platform["game_id"].isin(lst_of_existing_game_id)]
+        df_game_genre = df_game_genre[~df_game_genre["game_id"].isin(lst_of_existing_game_id)]
+    else:
+        # Only Include Games that are already in DB
+        df_game_data = df_game_data[df_game_data["id"].isin(lst_of_existing_game_id)]
+        df_game_platform = df_game_platform[df_game_platform["game_id"].isin(lst_of_existing_game_id)]
+        df_game_store = df_game_store[df_game_store["game_id"].isin(lst_of_existing_game_id)]
+        df_game_rating = df_game_rating[df_game_rating["game_id"].isin(lst_of_existing_game_id)]
+        df_game_status = df_game_status[df_game_status["game_id"].isin(lst_of_existing_game_id)]
+        df_game_tag = df_game_tag[df_game_tag["game_id"].isin(lst_of_existing_game_id)]
+        df_game_esrb = df_game_esrb[df_game_esrb["game_id"].isin(lst_of_existing_game_id)]
+        df_game_parent_platform = df_game_parent_platform[df_game_parent_platform["game_id"].isin(lst_of_existing_game_id)]
+        df_game_genre = df_game_genre[df_game_genre["game_id"].isin(lst_of_existing_game_id)]
 
     # Export to raw_data folder
     df_game_data.to_csv(os.path.join(data_directory, "game_data.csv"), index=False)
@@ -757,38 +772,6 @@ def check_new_games(**kwargs):
     session.close()
     conn.close()
 
-
-    
-## to be placed after transformed
-def check_new_rating(**kwargs):
-    # Task Instance
-    ti = kwargs["ti"]
-
-    # Data Directory
-    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
-    data_directory = os.path.join(root_data_directory, "transformed_data")
-
-    # database session
-    session, engine = session_engine_from_connection_string(CONNECTION_STRING)
-    conn = engine.connect()
-
-    # Rating (located in transformed_data folder)
-    df_rating = pd.read_csv(os.path.join(data_directory, "entity_rating.csv"))
-    df_rating["id"] = df_rating["id"].astype(int)
-    lst_of_rating = df_rating["id"].unique().tolist()
-
-    # SQL Command to check for Records that Exist in Schema
-    sql_query = f"SELECT id FROM rating WHERE id IN {lst_of_rating}"
-    sql_query = re.sub("\[", "(", sql_query)
-    sql_query = re.sub("\]", ")", sql_query)
-    df_existing_rating = pd.read_sql(sql_query, session.bind)
-
-    # filter for new rating and send new filtered file back to transformed_data
-    df_new_rating = df_rating[~df_rating["id"].isin(df_existing_rating.id.tolist())]
-    df_new_rating.to_csv(os.path.join(data_directory, "entity_rating.csv"))
-
-    session.close()
-    conn.close()
 
 
 

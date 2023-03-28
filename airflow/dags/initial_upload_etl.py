@@ -156,7 +156,7 @@ with DAG(
             task_id='load_entity_game', 
             python_callable=load_entity_data, 
             provide_context=True,
-            op_kwargs={'table': Game, 'file_name': 'entity_game.csv'},
+            op_kwargs={'table': Game, 'file_name': 'entity_game.csv', 'monthly_update': False},
     )
 
     # publisher
@@ -164,7 +164,7 @@ with DAG(
             task_id='load_entity_publisher', 
             python_callable=load_entity_data, 
             provide_context=True,
-            op_kwargs={'table': Publisher, 'file_name': 'entity_publisher.csv'},
+            op_kwargs={'table': Publisher, 'file_name': 'entity_publisher.csv', 'monthly_update': False},
     )
     
     # genre
@@ -172,7 +172,7 @@ with DAG(
             task_id='load_entity_genre', 
             python_callable=load_entity_data, 
             provide_context=True,
-            op_kwargs={'table': Genre, 'file_name': 'entity_genre.csv'},
+            op_kwargs={'table': Genre, 'file_name': 'entity_genre.csv', 'monthly_update': False},
     )
 
     # tag
@@ -180,7 +180,7 @@ with DAG(
             task_id='load_entity_tag', 
             python_callable=load_entity_data, 
             provide_context=True,
-            op_kwargs={'table': Tag, 'file_name': 'entity_tag.csv'},
+            op_kwargs={'table': Tag, 'file_name': 'entity_tag.csv', 'monthly_update': False},
     )
 
     # store
@@ -188,7 +188,7 @@ with DAG(
             task_id='load_entity_store', 
             python_callable=load_entity_data, 
             provide_context=True,
-            op_kwargs={'table': Store, 'file_name': 'entity_store.csv'},
+            op_kwargs={'table': Store, 'file_name': 'entity_store.csv', 'monthly_update': False},
     )
 
     # parent platform
@@ -196,7 +196,7 @@ with DAG(
             task_id='load_entity_parent_platform', 
             python_callable=load_entity_data, 
             provide_context=True,
-            op_kwargs={'table': ParentPlatform, 'file_name': 'entity_parent_platform.csv'},
+            op_kwargs={'table': ParentPlatform, 'file_name': 'entity_parent_platform.csv', 'monthly_update': False},
     )
 
     # platform
@@ -204,7 +204,7 @@ with DAG(
             task_id='load_entity_platform', 
             python_callable=load_entity_data, 
             provide_context=True,
-            op_kwargs={'table': Platform, 'file_name': 'entity_platform.csv'},
+            op_kwargs={'table': Platform, 'file_name': 'entity_platform.csv', 'monthly_update': False},
     )
 
     # rating
@@ -212,7 +212,7 @@ with DAG(
             task_id='load_entity_rating', 
             python_callable=load_entity_data, 
             provide_context=True,
-            op_kwargs={'table': Rating, 'file_name': 'entity_rating.csv'},
+            op_kwargs={'table': Rating, 'file_name': 'entity_rating.csv', 'monthly_update': False},
     )
 
     # Relationship
@@ -222,7 +222,7 @@ with DAG(
             task_id='load_rs_game_publisher', 
             python_callable=load_game_relationship_data, 
             provide_context=True,
-            op_kwargs={'entity': 'publisher', 'table': GamePublisher, 'file_name': 'rs_game_publisher.csv'},
+            op_kwargs={'entity': 'publisher', 'table': GamePublisher, 'file_name': 'rs_game_publisher.csv', 'monthly_update': False},
     )
 
     # GameGenre
@@ -230,7 +230,7 @@ with DAG(
             task_id='load_rs_game_genre', 
             python_callable=load_game_relationship_data, 
             provide_context=True,
-            op_kwargs={'entity': 'genre', 'table': GameGenre, 'file_name': 'rs_game_genre.csv'},
+            op_kwargs={'entity': 'genre', 'table': GameGenre, 'file_name': 'rs_game_genre.csv', 'monthly_update': False},
     )
 
     # GameTag
@@ -238,7 +238,7 @@ with DAG(
             task_id='load_rs_game_tag', 
             python_callable=load_game_relationship_data, 
             provide_context=True,
-            op_kwargs={'entity': 'tag', 'table': GameTag, 'file_name': 'rs_game_tag.csv'},
+            op_kwargs={'entity': 'tag', 'table': GameTag, 'file_name': 'rs_game_tag.csv', 'monthly_update': False},
     )
 
     # GameStore
@@ -246,7 +246,7 @@ with DAG(
             task_id='load_rs_game_store', 
             python_callable=load_game_relationship_data, 
             provide_context=True,
-            op_kwargs={'entity': 'store', 'table': GameStore, 'file_name': 'rs_game_store.csv'},
+            op_kwargs={'entity': 'store', 'table': GameStore, 'file_name': 'rs_game_store.csv', 'monthly_update': False},
     )
 
     # GamePlatform
@@ -254,7 +254,7 @@ with DAG(
             task_id='load_rs_game_platform', 
             python_callable=load_game_relationship_data, 
             provide_context=True,
-            op_kwargs={'entity': 'platform', 'table': GamePlatform, 'file_name': 'rs_game_platform.csv'},
+            op_kwargs={'entity': 'platform', 'table': GamePlatform, 'file_name': 'rs_game_platform.csv', 'monthly_update': False},
     )
 
     # GameRating
@@ -262,7 +262,7 @@ with DAG(
             task_id='load_rs_game_rating', 
             python_callable=load_game_relationship_data, 
             provide_context=True,
-            op_kwargs={'entity': 'rating', 'table': GameRating, 'file_name': 'rs_game_rating.csv'},
+            op_kwargs={'entity': 'rating', 'table': GameRating, 'file_name': 'rs_game_rating.csv', 'monthly_update': False},
     )
 
 
