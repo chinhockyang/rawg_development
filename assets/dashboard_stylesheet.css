@@ -1,0 +1,50 @@
+body {
+    /* background-color: black; */
+    padding: 1vw;
+    /* color: white; */
+}
+
+/* .main_container{
+    padding: 1vw;
+    background-color: aliceblue;
+} */
+
+.section_container{
+    margin-top: 1vw;
+    margin-bottom: 1vw;
+    padding: 0px;
+    /* background-color: bisque; */
+}
+
+.feature_dropdown {
+    width: 25%;
+    margin-top: 1vw;
+    margin-bottom: 1vw;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.feature_dropdown_small {
+    width: 80%;
+    margin-top: 1vw;
+    margin-bottom: 1vw;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.left_grid {
+    width: 50%;
+    display: flex;
+    align-items: stretch;
+}
+
+.right_grid {
+    width: 50%;
+}
+
+/* figure this out */
+.heatmap {
+    height: 100vh;
+    /* display: flex; */
+    /* flex: 1; */
+}
