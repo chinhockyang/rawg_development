@@ -51,7 +51,7 @@ with DAG(
     # Set New Games Data Directory
     task_set_data_directory = PythonOperator(
         task_id="set_data_directory",
-        python_callable=set_classification_data_directory,
+        python_callable=set_ml_data_directory,
         provide_context=True
     )
 
