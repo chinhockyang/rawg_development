@@ -42,8 +42,6 @@ from load import session_engine_from_connection_string
 # Functions Used to Perform API Request
 ################################################################################################
 
-# -------------------------------------------------------------------------[TODO]: Create Try and Catch to re-request if Error 502
-
 def get_list_response(API_KEY: str, endpoint: str, **kwargs):
     """
     Function to extract data from RAWG's List APIs (e.g. Game list, Developer List).
@@ -179,8 +177,7 @@ def extract_game_list(**kwargs):
 
     if extraction_task == "initial_upload":
         # Data Date Range from 2018-01-01 to 2023-01-01
-        # ----------------------------------------------- COMMENT OUT TO NOT OVER-REQUEST
-        # --------------------------------------------------------------------------- [TO DOCUMENT: REACH PAGE 250 API WILL FAIL]
+        # --------------------------- Only 5 days are retrieved in testing due to API limits
         date_range = [
             # "2018-01-01,2018-06-30",
             # "2018-07-01,2018-12-31",
@@ -193,7 +190,7 @@ def extract_game_list(**kwargs):
             # "2022-01-01,2022-06-30",
             # "2022-07-01,2022-12-31",
             # "2023-01-01,2023-01-31"
-            "2023-01-01,2023-01-03"
+            "2023-01-01,2023-01-05"
         ]
     elif extraction_task == "extract_new_games":
         if month == 1:
@@ -280,7 +277,7 @@ def extract_game_list(**kwargs):
     root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
     data_directory = os.path.join(root_data_directory, "raw_data")
 
-    # Store Data and Path Data Path to XCOM
+    # Store Data
     game_data_path = os.path.join(data_directory, "game_data.csv")
     df_compiled_game_data.to_csv(game_data_path, index=False)
 
@@ -408,7 +405,6 @@ def extract_publisher(**kwargs):
 
 
 
-# ---------------------------------------------------------------------------------------------[TODO: POTENTIALLY COMBINE INTO 1 FUNCTION]
 def extract_genre(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -422,12 +418,6 @@ def extract_genre(**kwargs):
 
     if genre_to_extract == None:
         #### Initial Upload
-
-        # If file already exist in the raw_data folder, terminate
-        # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-        if "genre_data.csv" in os.listdir(data_directory):
-            return
-
         # Extract Data from API
         genre_resp = get_list_response(RAWG_TOKEN, "genres", page_size=40)
         df_genre = pd.DataFrame(genre_resp["results"])
@@ -458,7 +448,6 @@ def extract_genre(**kwargs):
 
 
 
-# ---------------------------------------------------------------------------------------------[TODO: POTENTIALLY COMBINE INTO 1 FUNCTION]
 def extract_tag(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -472,12 +461,6 @@ def extract_tag(**kwargs):
 
     if tag_to_extract == None:
         #### Initial Upload
-
-        # If file already exist in the raw_data folder, terminate
-        # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-        if "tag_data.csv" in os.listdir(data_directory):
-            return
-
         # Extract Data from API
         df_all_tags = pd.DataFrame()
         continue_extract = True
@@ -517,8 +500,6 @@ def extract_tag(**kwargs):
         df_tag_output.to_csv(os.path.join(data_directory, "tag_data.csv"), index=False)
 
 
-
-# ---------------------------------------------------------------------------------------------[TODO: POTENTIALLY COMBINE INTO 1 FUNCTION]
 def extract_store(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -532,12 +513,6 @@ def extract_store(**kwargs):
 
     if store_to_extract == None:
         #### Initial Upload
-
-        # If file already exist in the raw_data folder, terminate
-        # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-        if "store_data.csv" in os.listdir(data_directory):
-            return
-
         # Extract Data from API
         stores_resp = get_list_response(RAWG_TOKEN, "stores", page_size=40)
         df_store = pd.DataFrame(stores_resp["results"])
@@ -566,8 +541,6 @@ def extract_store(**kwargs):
         df_store_output.to_csv(os.path.join(data_directory, "store_data.csv"), index=False)
 
 
-
-# ---------------------------------------------------------------------------------------------[TODO: POTENTIALLY COMBINE INTO 1 FUNCTION]
 def extract_platform(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -581,12 +554,6 @@ def extract_platform(**kwargs):
 
     if platform_to_extract == None:
         #### Initial Upload
-
-        # If file already exist in the raw_data folder, terminate
-        # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-        if "platform_data.csv" in os.listdir(data_directory):
-            return
-
         # Extract Data from API
         df_all_platforms = pd.DataFrame()
         continue_extract = True
@@ -650,11 +617,6 @@ def extract_parent_platform(**kwargs):
             parent_platform_platform_path = os.path.join(data_directory, "parent_platform_platform.csv")
             df_parent_platform_platform.to_csv(parent_platform_platform_path, index=False)
             return
-
-    # If file already exist in the raw_data folder, terminate (Initial Upload to save time and token quota)
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-    if "parent_platform_data.csv" in os.listdir(data_directory):
-        return
 
     # Extract Data from API (Parent Platform Full List)
     parent_platforms_resp = get_list_response(RAWG_TOKEN, "platforms/lists/parents", page_size=40, ordering="-count")
@@ -732,7 +694,7 @@ def check_games(**kwargs):
     sql_query = re.sub("\]", ")", sql_query)
     df_existing_games = pd.read_sql(sql_query, session.bind)
 
-    # ---------------------------------------------------------------------------------------------[TO DROP GAMES THAT ARE ACTUALLY NOT NEW (API PROBLEM)]
+    # Drop Games That Are Actually Not New (Api Problem)
     lst_of_existing_game_id = df_existing_games.id.unique().tolist()
     
     if check_for_new:
@@ -774,7 +736,6 @@ def check_games(**kwargs):
 
 
 
-
 def check_new_records(**kwargs):
     # Task Instance
     ti = kwargs["ti"]
@@ -797,7 +758,6 @@ def check_new_records(**kwargs):
     lst_of_entity = df_game_entity_rs[f"{entity}_id"].unique().tolist()
 
     # SQL Command to check for Records that Exist in Schema
-    # ---------------------------------------------------------------------------------------------[TO REVIEW IF ITS THE BEST QUERY]
     sql_query = f"SELECT id FROM {entity} WHERE id IN {lst_of_entity}"
     sql_query = re.sub("\[", "(", sql_query)
     sql_query = re.sub("\]", ")", sql_query)
