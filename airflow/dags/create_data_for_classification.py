@@ -73,22 +73,10 @@ with DAG(
         python_callable=transform_store_data, 
         provide_context=True)
     
-    # Transform Publisher
-    task_transform_publisher = PythonOperator(
-        task_id='transform_publisher_data', 
-        python_callable=transform_publisher_data, 
-        provide_context=True)
-    
     # Transform Genre
     task_transform_genre = PythonOperator(
         task_id='transform_genre_data', 
         python_callable=transform_genre_data, 
-        provide_context=True)
-    
-    # Transform Tag
-    task_transform_tag = PythonOperator(
-        task_id='transform_tag_data', 
-        python_callable=transform_tag_data, 
         provide_context=True)
     
     # Merge Data
@@ -106,8 +94,6 @@ with DAG(
     # Relationships
     task_transform_game >> task_transform_platform >> task_merge
     task_transform_game >> task_transform_store >> task_merge
-    task_transform_game >> task_transform_publisher >> task_merge
     task_transform_game >> task_transform_genre >> task_merge
-    task_transform_game >> task_transform_tag >> task_merge
     task_merge >> task_load
     task_set_data_directory >> task_load

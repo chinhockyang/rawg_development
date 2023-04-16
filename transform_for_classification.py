@@ -18,7 +18,6 @@ CONNECTION_STRING = os.getenv("MYSQL_CONNECTION_STRING")
 from database import Base
 from load import session_engine_from_connection_string
 
-
 # Helper Functions
 ################################################################################################
 
@@ -38,6 +37,18 @@ def extract_table(table_name):
 
     return table
 
+def bin(rating):
+    if rating > 4:   # Exceptional
+        return 4
+    elif rating > 3: # Recommended
+        return 3
+    elif rating > 2: # Meh
+        return 2
+    elif rating > 1: # Skip
+        return 1
+    else:            # Not Rated
+        return 0
+
 def one_hot_encode(df:pd.DataFrame(),rows:str,cols:str) -> pd.DataFrame():
     """
     Helper function to one hot encode categorical entities.
@@ -49,10 +60,11 @@ def one_hot_encode(df:pd.DataFrame(),rows:str,cols:str) -> pd.DataFrame():
     group = pd.DataFrame(df.groupby([rows])[cols].apply(lambda x: tuple(x.values))).reset_index()
     
     # one hot encoding
-    mlb = MultiLabelBinarizer(sparse_output=True)
+    mlb = MultiLabelBinarizer()
     content = mlb.fit_transform(group[cols])
-    new_df = pd.DataFrame(data = content.toarray(),
-                          columns=mlb.classes_).add_prefix(cols+"_")
+    classes = mlb.classes_
+    
+    new_df = pd.DataFrame(data=content,columns=classes).add_prefix(cols+"_")
     
     # add count as a feature
     new_df[cols+"s_count"] = new_df.sum(axis=1) 
@@ -62,20 +74,6 @@ def one_hot_encode(df:pd.DataFrame(),rows:str,cols:str) -> pd.DataFrame():
     
     return new_df
 
-def bin(y):
-    """
-    Helper function to transform target variable from continuous to categorical.
-    """
-    if y > 4:
-        return 4
-    elif y > 3:
-        return 3
-    elif y > 2:
-        return 2
-    else:
-        return 1
-
-
 # Transform Function
 ################################################################################################
 
@@ -84,34 +82,74 @@ def transform_game_data(ti):
     # read entity table
     entity_game = extract_table("game")
 
-    # solve corrupted columns
-    entity_game = entity_game.drop(columns=['achievements_count'])
-    entity_game = entity_game.rename(columns={'parent_achievements_count':'achievements_count',
-                                              'added':'added_count'}) # remove
-
+    # user specifications
+    columns_to_drop = [
+        "slug",
+        "name",
+        "name_original", 
+        #"alternative_names",
+        "updated",
+        "rating_top",
+        "reviews_count", 
+        #"ratings_count",
+        #"community_rating",
+        "metacritic",
+        "achievements_count",
+        'added_yet',
+        'added_owned',
+        'added_beaten',
+        'added_toplay',
+        'added_dropped',
+        'added_playing',
+        "description_raw",
+        #"saturated_color",
+        #"dominant_color",
+        "background_image",
+        "background_image_additional",
+        #"clip",
+        "reddit_name",
+        "reddit_description",
+        "reddit_logo",
+        "esrb", 
+        "score", 
+        #"user_game",
+        "creators_count",
+    ]
+    columns_to_rename = {
+        'parent_achievements_count':'achievements_count',
+        'added':'added_count',
+        'movies_count':'movies',
+    }
+    columns_nan_to_bool = [
+        'website',
+        'description',
+        'reddit_url',
+    ]
+    columns_num_to_bool = [
+        'movies',
+    ]
+    
     # drop irrelevant columns
-    entity_game = entity_game.drop(columns=["slug", "name", "name_original", #"alternative_names",
-                                            "updated",
-                                            "rating_top", "reviews_count", #"ratings_count", "community_rating",
-                                            "metacritic",
-                                            "description_raw",
-                                            #"saturated_color","dominant_color",
-                                            "background_image","background_image_additional",
-                                            #"clip",
-                                            "reddit_name","reddit_description","reddit_logo",
-                                            "esrb",
-                                            "score",
-                                            #"user_game",
-                                            "creators_count"])
+    entity_game = entity_game.drop(columns=columns_to_drop)
 
-    # only retain games where added_count and sum of added statuses tally
-    entity_game['added_sum'] = entity_game['added_yet'] + entity_game['added_owned'] + entity_game['added_beaten'] + entity_game['added_toplay'] + entity_game['added_dropped'] + entity_game['added_playing']
-    entity_game = entity_game[entity_game["added_count"] == entity_game["added_sum"]]
-    entity_game.drop(columns=["added_sum"], inplace=True)
+    # drop rows with rating = 0
+    # entity_game = entity_game[entity_game["rating"] > 0]
+    
+    # rename columns
+    entity_game = entity_game.rename(columns=columns_to_rename)
 
-    # only retain games that are not "to be announced"
-    entity_game = entity_game[entity_game['tba'] == False]
-    entity_game.drop(columns=["tba"], inplace=True)
+    # convert columns with nan to boolean (nan = false)
+    for column in columns_nan_to_bool:
+        entity_game[column] = entity_game[column].notna()
+
+    # convert columns with number to boolean (0 = false)
+    for column in columns_num_to_bool:
+        entity_game[column] = entity_game[column].fillna(0) > 0
+
+    # convert boolean columns to integer
+    for column in entity_game.columns:
+        if entity_game[column].dtypes.name == 'bool':
+            entity_game[column] = entity_game[column].astype(int)
 
     # seperate release date into day of the week, day of the month, month and year
     if not is_datetime(entity_game['released']):
@@ -122,44 +160,27 @@ def transform_game_data(ti):
     entity_game['year'] = entity_game['released'].apply(lambda x: x.year)
     entity_game = entity_game.drop(columns=['released'])
 
-    # transform website, description, movies and reddit_url values to boolean
-    entity_game['website'] = entity_game['website'].notna().astype(int)
-    entity_game['description'] = entity_game['description'].notna().astype(int)
-    entity_game['reddit_url'] = entity_game['reddit_url'].notna().astype(int)
-    entity_game['movies'] = (entity_game['movies_count'].fillna(0) == 0).astype(int)
-    entity_game = entity_game.drop(columns=['movies_count'])
+    # bin rating column
+    entity_game["rating"] = entity_game["rating"].apply(bin)
 
-    # transform added status counts to percentages
-    entity_game['added_yet'] = (entity_game['added_yet'].fillna(0)/entity_game['added_count']).mul(100).round(2)
-    entity_game['added_owned'] = (entity_game['added_owned'].fillna(0)/entity_game['added_count']).mul(100).round(2)
-    entity_game['added_beaten'] = (entity_game['added_beaten'].fillna(0)/entity_game['added_count']).mul(100).round(2)
-    entity_game['added_toplay'] = (entity_game['added_toplay'].fillna(0)/entity_game['added_count']).mul(100).round(2)
-    entity_game['added_dropped'] = (entity_game['added_dropped'].fillna(0)/entity_game['added_count']).mul(100).round(2)
-    entity_game['added_playing'] = (entity_game['added_playing'].fillna(0)/entity_game['added_count']).mul(100).round(2)
+    # drop NA columns
+    entity_game = entity_game.dropna()
 
     # push to descendent tasks
     ti.xcom_push(value=entity_game.to_dict(), key='game')
-    ti.xcom_push(value=list(entity_game.id), key='game_list')
 
 
 def transform_platform_data(ti):
 
     # read entity and relationship tables
-    entity_parent_platform = extract_table("parent_platform").rename(columns={"id":"parent_platform_id","slug":"parent_platform"})
     entity_platform = extract_table("platform").rename(columns={"id":"platform_id","slug":"platform"})
     game_platform = extract_table("game_platform")
     
     # inner join entity and relationship table
-    game_platform = game_platform.merge(entity_platform.merge(entity_parent_platform, how="inner", on="parent_platform_id"), how="inner", on="platform_id")[["game_id","platform","parent_platform"]]
-
-    # drop games not present in game data
-    game_list = ti.xcom_pull(task_ids='transform_game_data', key='game_list')
-    game_platform = game_platform.loc[game_platform['game_id'].isin(game_list)]
+    game_platform = game_platform.merge(entity_platform, how="inner", on="platform_id")[["game_id","platform"]]
 
     # one hot encoding
-    ohc_parent_platform = one_hot_encode(game_platform,"game_id","parent_platform")
     ohc_platform = one_hot_encode(game_platform,"game_id","platform")
-    ohc_platform = ohc_platform.merge(ohc_parent_platform, how="inner", on=["id"])
     
     # push to descendent tasks
     ti.xcom_push(value=ohc_platform.to_dict(), key='game_platform')
@@ -173,36 +194,12 @@ def transform_store_data(ti):
     
     # inner join entity and relationship table
     game_store = game_store.merge(entity_store, how="inner", on="store_id")[["game_id","store"]]
-
-    # drop games not present in game data
-    game_list = ti.xcom_pull(task_ids='transform_game_data', key='game_list')
-    game_store = game_store.loc[game_store['game_id'].isin(game_list)]
     
     # one hot encoding
     ohc_store = one_hot_encode(game_store,"game_id","store")
 
     # push to descendent tasks
     ti.xcom_push(value=ohc_store.to_dict(), key='game_store')
-
-
-def transform_publisher_data(ti):
-
-    # read entity and relationship tables
-    entity_publisher = extract_table("publisher").rename(columns={"id":"publisher_id","slug":"publisher"})
-    game_publisher = extract_table("game_publisher")
-
-    # inner join entity and relationship table
-    game_publisher = game_publisher.merge(entity_publisher, how="inner", on="publisher_id")[["game_id","publisher"]]
-
-    # drop games not present in game data
-    game_list = ti.xcom_pull(task_ids='transform_game_data', key='game_list')
-    game_publisher = game_publisher.loc[game_publisher['game_id'].isin(game_list)]
-
-    # one hot encode
-    ohc_publisher = one_hot_encode(game_publisher,"game_id","publisher")
-
-    # push to descendent tasks
-    ti.xcom_push(value=ohc_publisher.to_dict(), key='game_publisher')
 
 
 def transform_genre_data(ti):
@@ -214,10 +211,6 @@ def transform_genre_data(ti):
     # inner join entity and relationship table
     game_genre = game_genre.merge(entity_genre, how="inner", on="genre_id")[["game_id","genre"]]
 
-    # drop games not present in game data
-    game_list = ti.xcom_pull(task_ids='transform_game_data', key='game_list')
-    game_genre = game_genre.loc[game_genre['game_id'].isin(game_list)]
-
     # one hot encode
     ohc_genre = one_hot_encode(game_genre,"game_id","genre")
 
@@ -225,48 +218,18 @@ def transform_genre_data(ti):
     ti.xcom_push(value=ohc_genre.to_dict(), key='game_genre')
 
 
-def transform_tag_data(ti):
-
-    # read entity and relationship tables
-    entity_tag = extract_table("tag").rename(columns={"id":"tag_id","slug":"tag"})
-    game_tag = extract_table("game_tag")
-
-    # inner join entity and relationship table
-    game_tag = game_tag.merge(entity_tag, how="inner", on="tag_id")[["game_id","tag"]]
-
-    # drop games not present in game data
-    game_list = ti.xcom_pull(task_ids='transform_game_data', key='game_list')
-    game_tag = game_tag.loc[game_tag['game_id'].isin(game_list)]
-
-    # one hot encode
-    ohc_tag = one_hot_encode(game_tag,"game_id","tag")
-
-    # push to descendent tasks
-    ti.xcom_push(value=ohc_tag.to_dict(), key='game_tag')
-    
-
 def merge_data(ti):
 
     # get tables
     game = pd.DataFrame(ti.xcom_pull(task_ids='transform_game_data', key="game"))
     game_platform = pd.DataFrame(ti.xcom_pull(task_ids='transform_platform_data', key="game_platform"))
     game_store = pd.DataFrame(ti.xcom_pull(task_ids='transform_store_data', key="game_store"))
-    game_publisher = pd.DataFrame(ti.xcom_pull(task_ids='transform_publisher_data', key="game_publisher"))
     game_genre = pd.DataFrame(ti.xcom_pull(task_ids='transform_genre_data', key="game_genre"))
-    game_tag = pd.DataFrame(ti.xcom_pull(task_ids='transform_tag_data', key="game_tag"))
 
     # merge
     game = game.merge(game_platform, how="inner", on=["id"]) \
                .merge(game_store, how="inner", on=["id"]) \
-               .merge(game_publisher, how="inner", on=["id"]) \
-               .merge(game_genre, how="inner", on=["id"]) \
-               .merge(game_tag, how="inner", on=["id"])
-
-    # only retain publisher/genre/tag columns that are included in at least 1 game
-    game = game.loc[:,~(game.sum() == 0 & game.columns.str.startswith(("publishers_","genres_","tags_")))]
-
-    # bin target variable
-    game["rating"] = game["rating"].apply(bin)
+               .merge(game_genre, how="inner", on=["id"])
 
     # push to descendent tasks
     ti.xcom_push(value=game.to_dict(), key='data')
@@ -280,13 +243,13 @@ def load_data(ti):
 
     # sql upload
     data = pd.DataFrame(ti.xcom_pull(task_ids='merge_data', key="data"))
-    data.to_sql("classification_data", index=False, schema='rawg', if_exists="replace", con=engine)
+    data.to_sql(con=engine, schema="rawg", name="classification_data", index=False, if_exists="replace")
 
     # close database session
     session.close()
     conn.close()
 
-     # local upload
+    # local upload
     data_directory = ti.xcom_pull(task_ids='set_data_directory', key="data_directory")
     data.to_csv(os.path.join(data_directory, "classification_data.csv"), index=False)
 
