@@ -9,14 +9,13 @@ from datetime import datetime
 from pandas.api.types import is_datetime64_any_dtype as is_datetime
 from sklearn.preprocessing import MultiLabelBinarizer
 
-
 # Database Connection Setup
 ################################################################################################
 from dotenv import load_dotenv
 dotenv = load_dotenv()
 CONNECTION_STRING = os.getenv("MYSQL_CONNECTION_STRING")
-from database import Base
-from load import session_engine_from_connection_string
+from database import Base, ClassificationData
+from load import session_engine_from_connection_string, upload_data
 
 # Helper Functions
 ################################################################################################
@@ -240,16 +239,19 @@ def load_data(ti):
     # open database session
     session, engine = session_engine_from_connection_string(CONNECTION_STRING)
     conn = engine.connect()
+    
+    # Create Table if not created
+    Base.metadata.drop_all(engine, [ClassificationData.__table__])
+    Base.metadata.create_all(engine, [ClassificationData.__table__])
+    
+    # local upload
+    data = pd.DataFrame(ti.xcom_pull(task_ids='merge_data', key="data"))
+    data_directory = ti.xcom_pull(task_ids='set_data_directory', key="data_directory")
+    data.to_csv(os.path.join(data_directory, "classification_data.csv"), index=False)
 
     # sql upload
-    data = pd.DataFrame(ti.xcom_pull(task_ids='merge_data', key="data"))
-    data.to_sql(con=engine, schema="rawg", name="classification_data", index=False, if_exists="replace")
+    upload_data(session, data, ClassificationData)
 
     # close database session
     session.close()
     conn.close()
-
-    # local upload
-    data_directory = ti.xcom_pull(task_ids='set_data_directory', key="data_directory")
-    data.to_csv(os.path.join(data_directory, "classification_data.csv"), index=False)
-

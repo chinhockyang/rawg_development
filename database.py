@@ -1,13 +1,13 @@
 
-# Tentative File to store Tables (SQLAlchemy Style) necessary for Database Creation (Through Python)
-# [KIV]: Usage of Raw SQL Commands through Airflow BashOperators
-# ======================================================
-
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 
 # Create a base for the models to build upon.
 Base = declarative_base()
+
+
+# Data Warehouse
+# =====================================================================
 
 ################################################# ENTITIES
 
@@ -102,6 +102,8 @@ class Rating(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String(50))
 
+################################################# RELATIONSHIP
+
 class GamePublisher(Base):
     __tablename__ = "game_publisher"
     game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
@@ -139,3 +141,87 @@ class GameRating(Base):
     rating_id = Column(Integer, ForeignKey("rating.id"), primary_key=True)
     game_id = Column(Integer, ForeignKey("game.id"), primary_key=True)
     count = Column(Integer)
+    
+    
+# Data Store
+# =====================================================================
+
+class ClassificationData(Base):
+    __tablename__ = "classification_data"
+    
+    id = Column(Integer, primary_key=True)
+    
+    # statistics and basicinfo of game
+    playtime = Column(Integer)
+    rating = Column(Integer)
+    reviews_text_count = Column(Integer)
+    added_count = Column(Integer)
+    suggestions_count = Column(Integer)
+    website = Column(Integer)
+    screenshots_count = Column(Integer)
+    movies = Column(Integer)
+    achievements_count = Column(Integer)
+    reddit_url = Column(Integer)
+    reddit_count = Column(Integer)
+    twitch_count = Column(Integer)
+    youtube_count = Column(Integer)
+    parents_count = Column(Integer)
+    additions_count = Column(Integer)
+    game_series_count = Column(Integer)
+    tba = Column(Integer)
+    description = Column(Integer)
+    
+    # release date features
+    day_of_week = Column(Integer)
+    day_of_month = Column(Integer)
+    month = Column(Integer)
+    year = Column(Integer)
+    
+    # platform features
+    platform_android = Column(Integer)
+    platform_ios = Column(Integer)
+    platform_linux = Column(Integer)
+    platform_macos = Column(Integer)
+    platform_nintendo_3ds = Column(Integer)
+    platform_nintendo_64 = Column(Integer)
+    platform_nintendo_switch = Column(Integer)
+    platform_pc = Column(Integer)
+    platform_playstation4 = Column(Integer)
+    platform_playstation5 = Column(Integer)
+    platform_ps_vita = Column(Integer)
+    platform_xbox_one = Column(Integer)
+    platform_xbox_series_x = Column(Integer)
+    platforms_count = Column(Integer)
+    
+    # store features
+    store_apple_appstore = Column(Integer)
+    store_epic_games = Column(Integer)
+    store_gog = Column(Integer)
+    store_google_play = Column(Integer)
+    store_nintendo = Column(Integer)
+    store_playstation_store = Column(Integer)
+    store_steam = Column(Integer)
+    store_xbox_store = Column(Integer)
+    stores_count = Column(Integer)
+    
+    # genre features
+    genre_action = Column(Integer)
+    genre_adventure = Column(Integer)
+    genre_arcade = Column(Integer)
+    genre_board_games = Column(Integer)
+    genre_card = Column(Integer)
+    genre_casual = Column(Integer)
+    genre_educational = Column(Integer)
+    genre_family = Column(Integer)
+    genre_fighting = Column(Integer)
+    genre_indie = Column(Integer)
+    genre_massively_multiplayer = Column(Integer)
+    genre_platformer = Column(Integer)
+    genre_puzzle = Column(Integer)
+    genre_racing = Column(Integer)
+    genre_role_playing_games_rpg = Column(Integer)
+    genre_shooter = Column(Integer)
+    genre_simulation = Column(Integer)
+    genre_sports = Column(Integer)
+    genre_strategy = Column(Integer)
+    genres_count = Column(Integer)
