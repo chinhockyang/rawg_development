@@ -131,11 +131,6 @@ class GamePlatform(Base):
     metascore = Column(Float)
     metacritic_url = Column(String(500))
 
-class Platform_ParentPlatform(Base):
-    __tablename__ = "platform_parentplatform"
-    platform_id = Column(Integer, ForeignKey("platform.id"), primary_key=True)
-    parent_platform_id = Column(Integer, ForeignKey("parent_platform.id"), primary_key=True)
-
 class GameRating(Base):
     __tablename__ = "game_rating"
     rating_id = Column(Integer, ForeignKey("rating.id"), primary_key=True)
