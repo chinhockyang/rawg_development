@@ -1,29 +1,39 @@
-# Development Repository for RAWG Data Pipeline
+# Video Game Analysis (RAWG Database)
 
-## Basic Setup
+## Introduction
+
+This project aims to perform Data Analysis on recent video games (starting from 2018) to identify key patterns and traits among successful recent games, and develop a predictive model that can classify the success or popularity of future games. Using Apache-Airflow, an Extract, Transform, Load and Transform (ETLT) pipeline will be used to fetch  latest data of video games every month from [RAWG](https://rawg.io/apidocs), an online video games database API, into a MySQL Data Warehouse. This Data Warehouse will serve 2 main downstream applications: a Dashboard Application (built using Plotly Dash) to provide data visualisations and analysis, and a Classification Model to classify a game's success.
+
+## Basic Environment Setup
 
 1. Create a virual environment using ```virtualenv venv```
-2. Activate virtual environment (tutorial slides)
+2. Activate virtual environment
 3. Install the following libraries:
-- pandas
-- numpy
-- requests
-- python-dotenv
-- sqlalchemy
-- pymysql
-- apache-airflow (view detailed instructions below)
-- dash
-- dash-bootstrap-components
-- dash-bootstrap-templates
-- plotly
-4. Create a .env file in the project directory, and store your RAWG API token as ```RAWG_TOKEN=<YOUR_TOKEN>```
-5. Should be able to use the notebooks. (Don't run all cells at once if not might waste API requests)
+
+| Library | Installation | Purpose |
+| :------------- |:-------------|:-------------|
+| Python=3.8+ | | |
+| Pandas | `pip install pandas` | Data Transformation |
+| Dot-Env | `pip install python-dotenv` | Store API Token Keys |
+| apache-airflow | view detailed instructions below | ETL Pipeline Automation |
+| Requests | `pip install requests` | API Requests / Data Extraction |
+| PyMySQL | `pip install pymysql` | Connection to MySQL |
+| SQLAlchemy | `pip install SQLAlchemy` | SQL Database Operations |
+| Scikit-learn | `pip install scikit-learn` | Machine Learning |
+| Seaborn | `pip install seaborn` | Data Visualisation
+| Plotly | `pip install plotly` | Data Visualisation |
+| Dash | `pip install dash` | Dashboard |
+| Dash Bootstrap Components | `pip install dash-bootstrap-components` | Dashboard |
+| Dash Bootstrap Templates | `pip install dash-bootstrap-templates` | Dashboard |
+
+4. Create a RAWG user account and obtain API key [here](https://rawg.io/login?forward=developer)
+5. Create a ```.env``` file in the project directory, and store your RAWG API token as ```RAWG_TOKEN=<YOUR_TOKEN>```
 
 ## MySQL Database Setup
 
 1. Create a schema named ```rawg``` in your local MySQL database server.
 2. Take note of the port number used for the server, and your username and password.
-3. Store the following ```MYSQL_CONNECTION_STRING="mysql+pymysql://<USERNAME>:<PASSWORD>@localhost:<PORT_NO>/rawg"``` in ```.env``` folder.
+3. Store the following ```MYSQL_CONNECTION_STRING="mysql+pymysql://<USERNAME>:<PASSWORD>@localhost:<PORT_NO>/rawg"``` in ```.env```.
 
 ## Airflow Setup
 
@@ -42,8 +52,6 @@
 2. Run ```airflow webserver --port 8080 -D``` to start a webserver on http://localhost:8080/
 
 3. Run ```airflow scheduler``` to start the scheduler
-
-4. Ensure that the ```dags_folder``` variable in airflow/airflow.cfg file points to the ```dags``` folder within the airflow folder in this project directory
 
 ## Dashboard Usage
 
