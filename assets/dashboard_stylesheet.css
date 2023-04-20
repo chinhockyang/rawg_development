@@ -1,0 +1,88 @@
+.side_bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 16rem;
+    padding: 2rem 1rem;
+    background-color: #f8f9fa;
+}
+
+.content_style {
+    margin-left: 18rem;
+    margin-right: 2rem;
+    padding: 2rem 1rem;
+    height: 100vh;
+}
+
+.filter_group {
+    padding-bottom: 1rem;
+}
+
+.eda_graph {
+    height: 25vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    padding: 10px;
+}
+
+.heatmap {
+    height: 70vh;
+    width: 100%;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    padding: 10px;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+}
+
+.feature_dropdown_small {
+    width: 20vw;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.ra_graph {
+    height: 40vh;
+}
+
+.ra_graph_container {
+    height: 50vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    margin-inline: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 10px;
+}
+
+.amr_graph {
+    height: 40vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    margin-inline: 0;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    padding: 10px;
+}
+
+.metric_card {
+    height: 20vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    padding: 10px;
+}
+
+.fi_graph {
+    height: 65vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    margin-inline: 10px;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
