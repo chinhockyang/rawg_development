@@ -12,6 +12,10 @@
 - sqlalchemy
 - pymysql
 - apache-airflow (view detailed instructions below)
+- dash
+- dash_bootstrap_components
+- plotly
+- dash-bootstrap-templates
 4. Create a .env file in the project directory, and store your RAWG API token as ```RAWG_TOKEN=<YOUR_TOKEN>```
 5. Should be able to use the notebooks. (Don't run all cells at once if not might waste API requests)
 
@@ -40,3 +44,7 @@
 3. Run ```airflow scheduler``` to start the scheduler
 
 4. Ensure that the ```dags_folder``` variable in airflow/airflow.cfg file points to the ```dags``` folder within the airflow folder in this project directory
+
+## Dashboard Usage
+
+1. Run ```python dashboard.py``` to run Flask app on http://127.0.0.1:8050/
