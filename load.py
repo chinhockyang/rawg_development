@@ -233,19 +233,21 @@ def load_game_relationship_data(**kwargs):
     lst_of_records = df_relationship[entity_col_name].unique().tolist()
 
     # SQL Command to check for Records that Exist in Schema
-    sql_query = f"SELECT id FROM {entity} WHERE id IN {lst_of_records}"
-    sql_query = re.sub("\[", "(", sql_query)
-    sql_query = re.sub("\]", ")", sql_query)
-    df_existing_records = pd.read_sql(sql_query, session.bind)
+    # perform loading if there are records to be loaded
+    if len(lst_of_records) > 0:
+        sql_query = f"SELECT id FROM {entity} WHERE id IN {lst_of_records}"
+        sql_query = re.sub("\[", "(", sql_query)
+        sql_query = re.sub("\]", ")", sql_query)
+        df_existing_records = pd.read_sql(sql_query, session.bind)
 
-    # Subset for those records that are in the Entity's DB (Prevent ForeignKey error)
-    df_relationship_subset = df_relationship[df_relationship[entity_col_name].isin(df_existing_records.id.tolist())]
+        # Subset for those records that are in the Entity's DB (Prevent ForeignKey error)
+        df_relationship_subset = df_relationship[df_relationship[entity_col_name].isin(df_existing_records.id.tolist())]
 
-    # Upload relationship data
-    if not monthly_update:
-        upload_data(session, df_relationship_subset, table)
-    else:
-        value_col = df_relationship_subset.columns.tolist()
-        value_col.remove("game_id")
-        value_col.remove(entity_col_name)
-        perform_update_insert_or_upload(session, df_relationship_subset, table, composite_keys=["game_id", entity_col_name], value_keys=value_col)
+        # Upload relationship data
+        if not monthly_update:
+            upload_data(session, df_relationship_subset, table)
+        else:
+            value_col = df_relationship_subset.columns.tolist()
+            value_col.remove("game_id")
+            value_col.remove(entity_col_name)
+            perform_update_insert_or_upload(session, df_relationship_subset, table, composite_keys=["game_id", entity_col_name], value_keys=value_col)

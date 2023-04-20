@@ -149,7 +149,6 @@ def transform_game_list_api(resp_json):
         # ======================================================
         if row["parent_platforms"] != None and type(row["parent_platforms"]) != float:
             for platform in row["parent_platforms"]:
-                # ---------------------------------------------------------------------------------------------[TO TEST: CHANGED THIS "PLATFORM" INSTEAD OF "PARENT_PLATFORM_ID"]
                 df_parent_platforms = pd.concat([df_parent_platforms, pd.DataFrame({"game_id": [row["id"]], "parent_platform_id": \
                                                                                     [platform["platform"]["id"]]})])
 
@@ -271,7 +270,7 @@ def transform_entity_game(**kwargs):
     data_upload_directory = os.path.join(root_data_directory, "transformed_data")     
     df_game = pd.read_csv(os.path.join(data_directory, "game_data.csv"))
  
-    # if monthly_dates --> only have df_game, no df_game_details ----------------------------------------[TENTATIVE: TO DOCUMENT]
+    # if monthly_dates --> only have df_game, no df_game_details
  
     # initial upload or monthly new games (full extraction of API)
     if "monthly_updates" not in root_data_directory:     	
@@ -314,11 +313,10 @@ def transform_entity_game(**kwargs):
 
     # Add GAME STATUS data into game table
     df_status = pd.read_csv(os.path.join(data_directory, "game_status.csv"))																			
-    df_status.rename(columns={col: f"added_{col}" if col != "game_id" else col for col in df_status.columns.tolist()}, inplace=True)	# change columns ["yet"] to ["added_yet"]
+    df_status.rename(columns={col: f"added_{col}" if col != "game_id" else col for col in df_status.columns.tolist()}, inplace=True)
     df_game_output = df_game_output.merge(df_status.rename(columns={"game_id": "id"}), on=["id"], how="left")
     
-    # Add ESRB data into game table
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+    # ----------------------------------------------------------------- handle case of no game esrb information
     try:
         df_game_esrb = pd.read_csv(os.path.join(data_directory, "game_esrb.csv"))
     except pd.errors.EmptyDataError:
@@ -390,9 +388,7 @@ def transform_entity_tag(**kwargs):
     data_upload_directory = os.path.join(root_data_directory, "transformed_data")
 
     df_tag = pd.read_csv(os.path.join(data_directory, "tag_data.csv"))
-
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-    # tag/list API return duplicates
+    # ----------------------------------------------------------------- tag/list API return duplicates
     df_tag.drop_duplicates(subset=["id"], inplace=True)
 
     df_tag.to_csv(os.path.join(data_upload_directory, "entity_tag.csv"), index=False)
@@ -425,8 +421,7 @@ def transform_entity_rating(**kwargs):
     data_upload_directory = os.path.join(root_data_directory, "transformed_data")
 
     df_game_ratings = pd.read_csv(os.path.join(data_directory, "game_rating.csv"))
-
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+    # ----------------------------------------------------------------- handle case of no game ratings information
     if len(df_game_ratings) == 0:
         df_game_ratings = pd.DataFrame(columns=["id", "title", "count", "percent", "game_id"])
     
@@ -441,11 +436,12 @@ def transform_rs_game_platform(**kwargs):
     data_upload_directory = os.path.join(root_data_directory, "transformed_data")
 
     df_game_platforms = pd.read_csv(os.path.join(data_directory, "game_platform.csv"))
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
-    try:
+    # ----------------------------------------------------------------- handle case of no game metacritic information
+    if "game_details_metacritic.csv" in os.listdir(data_directory):
         df_game_metacritic = pd.read_csv(os.path.join(data_directory, "game_details_metacritic.csv"))
-    except pd.errors.EmptyDataError:
+    else:
         df_game_metacritic = pd.DataFrame(columns=["metascore", "url", "platform", "platform_id", "game_id"])
+    
     
     # Add metacritic score info into this relationship table
     df_game_platform = pd.merge(df_game_platforms, df_game_metacritic[["metascore", "url", "platform_id", "game_id"]], how="left", on=["platform_id", "game_id"])
@@ -484,7 +480,7 @@ def transform_rs_game_rating(**kwargs):
     data_upload_directory = os.path.join(root_data_directory, "transformed_data")
 
     df_game_ratings = pd.read_csv(os.path.join(data_directory, "game_rating.csv"))
-    # ---------------------------------------------------------------------------------------------[TO DOCUMENT]
+    # ----------------------------------------------------------------- handle case of no game ratings information
     if len(df_game_ratings) == 0:
         df_game_ratings = pd.DataFrame(columns=["id", "title", "count", "percent", "game_id"])
 
@@ -537,7 +533,8 @@ def check_new_rating(**kwargs):
     df_rating["id"] = df_rating["id"].astype(int)
     lst_of_rating = df_rating["id"].unique().tolist()
     
-    # if there are rating information in the extraction ------------------------------------------[TO CHECK RATING PIPELINE: NO IDEA WHY entity_rating IS EMPTY]
+    # if there are rating information in the extraction
+    # (handle the case of games pulled having no rating information)
     if len(lst_of_rating) > 0:
         # SQL Command to check for Records that Exist in Schema
         sql_query = f"SELECT id FROM rating WHERE id IN {lst_of_rating}"
@@ -551,19 +548,3 @@ def check_new_rating(**kwargs):
 
     session.close()
     conn.close()
-
-
-def check_new_relationship(**kwargs):
-    # Task Instance
-    ti = kwargs["ti"] 
-
-    # Data Directory
-    root_data_directory = ti.xcom_pull(task_ids='set_data_directory', key="root_data_directory")
-    data_directory = os.path.join(root_data_directory, "transformed_data")
-    
-    # entity to check for new record
-    entity =  kwargs["entity"]
-    file_name = kwargs["file_name"]
-    
-    df_relationship = pd.read_csv(os.path.join(data_directory, file_name))
-    

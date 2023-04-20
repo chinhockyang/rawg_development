@@ -25,9 +25,7 @@ from database import *
 # Switch [Whether to perform Extraction]
 ################################################################################################
 
-# ------------------------------------------------------------------[FOR DEVELOPMENT PURPOSE]
-perform_extraction = False
-
+perform_extraction = True
 
 # Set local machine data directory (Directory used to store back-up data)
 ################################################################################################
@@ -131,20 +129,89 @@ with DAG(
     # Tranform
     # =========================================================================
 
-    task_transform_entity_game = PythonOperator(task_id='transform_entity_game', python_callable=transform_entity_game, provide_context=True)
-    task_transform_entity_parent_platform = PythonOperator(task_id='transform_entity_parent_platform', python_callable=transform_entity_parent_platform, provide_context=True)
-    task_transform_entity_platform = PythonOperator(task_id='transform_entity_platform', python_callable=transform_entity_platform, provide_context=True)
-    task_transform_entity_publisher = PythonOperator(task_id='transform_entity_publisher', python_callable=transform_entity_publisher, provide_context=True)
-    task_transform_entity_tag = PythonOperator(task_id='transform_entity_tag', python_callable=transform_entity_tag, provide_context=True)
-    task_transform_entity_genre = PythonOperator(task_id='transform_entity_genre', python_callable=transform_entity_genre, provide_context=True)
-    task_transform_entity_store = PythonOperator(task_id='transform_entity_store', python_callable=transform_entity_store, provide_context=True)
-    task_transform_entity_rating = PythonOperator(task_id='transform_entity_rating', python_callable=transform_entity_rating, provide_context=True)
-    task_transform_rs_game_platform = PythonOperator(task_id='transform_rs_game_platform', python_callable=transform_rs_game_platform, provide_context=True)
-    task_transform_rs_game_genre = PythonOperator(task_id='transform_rs_game_genre', python_callable=transform_rs_game_genre, provide_context=True)
-    task_transform_rs_game_store = PythonOperator(task_id='transform_rs_game_store', python_callable=transform_rs_game_store, provide_context=True)
-    task_transform_rs_game_rating = PythonOperator(task_id='transform_rs_game_rating', python_callable=transform_rs_game_rating, provide_context=True)
-    task_transform_rs_game_tag = PythonOperator(task_id='transform_rs_game_tag', python_callable=transform_rs_game_tag, provide_context=True)
-    task_transform_rs_game_publisher = PythonOperator(task_id='transform_rs_game_publisher', python_callable=transform_rs_game_publisher, provide_context=True)
+    task_transform_entity_game = PythonOperator(
+        task_id='transform_entity_game', 
+        python_callable=transform_entity_game, 
+        provide_context=True
+    )
+    
+    task_transform_entity_parent_platform = PythonOperator(
+        task_id='transform_entity_parent_platform', 
+        python_callable=transform_entity_parent_platform, 
+        provide_context=True
+    )
+    
+    task_transform_entity_platform = PythonOperator(
+        task_id='transform_entity_platform', 
+        python_callable=transform_entity_platform, 
+        provide_context=True
+    )
+    
+    task_transform_entity_publisher = PythonOperator(
+        task_id='transform_entity_publisher', 
+        python_callable=transform_entity_publisher, 
+        provide_context=True
+    )
+    
+    task_transform_entity_tag = PythonOperator(
+        task_id='transform_entity_tag', 
+        python_callable=transform_entity_tag, 
+        provide_context=True
+    )
+    
+    task_transform_entity_genre = PythonOperator(
+        task_id='transform_entity_genre', 
+        python_callable=transform_entity_genre, 
+        provide_context=True
+    )
+    
+    task_transform_entity_store = PythonOperator(
+        task_id='transform_entity_store', 
+        python_callable=transform_entity_store, 
+        provide_context=True
+    )
+    
+    task_transform_entity_rating = PythonOperator(
+        task_id='transform_entity_rating', 
+        python_callable=transform_entity_rating, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_platform = PythonOperator(
+        task_id='transform_rs_game_platform', 
+        python_callable=transform_rs_game_platform, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_genre = PythonOperator(
+        task_id='transform_rs_game_genre', 
+        python_callable=transform_rs_game_genre, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_store = PythonOperator(
+        task_id='transform_rs_game_store',
+        python_callable=transform_rs_game_store, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_rating = PythonOperator(
+        task_id='transform_rs_game_rating', 
+        python_callable=transform_rs_game_rating, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_tag = PythonOperator(
+        task_id='transform_rs_game_tag', 
+        python_callable=transform_rs_game_tag, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_publisher = PythonOperator(
+        task_id='transform_rs_game_publisher', 
+        python_callable=transform_rs_game_publisher,
+        provide_context=True
+    )
     
     # Load
     # =========================================================================
@@ -153,116 +220,116 @@ with DAG(
     
     # game
     task_load_entity_game = PythonOperator(
-            task_id='load_entity_game', 
-            python_callable=load_entity_data, 
-            provide_context=True,
-            op_kwargs={'table': Game, 'file_name': 'entity_game.csv', 'monthly_update': False},
+        task_id='load_entity_game', 
+        python_callable=load_entity_data, 
+        provide_context=True,
+        op_kwargs={'table': Game, 'file_name': 'entity_game.csv', 'monthly_update': False},
     )
 
     # publisher
     task_load_entity_publisher = PythonOperator(
-            task_id='load_entity_publisher', 
-            python_callable=load_entity_data, 
-            provide_context=True,
-            op_kwargs={'table': Publisher, 'file_name': 'entity_publisher.csv', 'monthly_update': False},
+        task_id='load_entity_publisher', 
+        python_callable=load_entity_data, 
+        provide_context=True,
+        op_kwargs={'table': Publisher, 'file_name': 'entity_publisher.csv', 'monthly_update': False},
     )
     
     # genre
     task_load_entity_genre = PythonOperator(
-            task_id='load_entity_genre', 
-            python_callable=load_entity_data, 
-            provide_context=True,
-            op_kwargs={'table': Genre, 'file_name': 'entity_genre.csv', 'monthly_update': False},
+        task_id='load_entity_genre', 
+        python_callable=load_entity_data, 
+        provide_context=True,
+        op_kwargs={'table': Genre, 'file_name': 'entity_genre.csv', 'monthly_update': False},
     )
 
     # tag
     task_load_entity_tag = PythonOperator(
-            task_id='load_entity_tag', 
-            python_callable=load_entity_data, 
-            provide_context=True,
-            op_kwargs={'table': Tag, 'file_name': 'entity_tag.csv', 'monthly_update': False},
+        task_id='load_entity_tag', 
+        python_callable=load_entity_data, 
+        provide_context=True,
+        op_kwargs={'table': Tag, 'file_name': 'entity_tag.csv', 'monthly_update': False},
     )
 
     # store
     task_load_entity_store = PythonOperator(
-            task_id='load_entity_store', 
-            python_callable=load_entity_data, 
-            provide_context=True,
-            op_kwargs={'table': Store, 'file_name': 'entity_store.csv', 'monthly_update': False},
+        task_id='load_entity_store', 
+        python_callable=load_entity_data, 
+        provide_context=True,
+        op_kwargs={'table': Store, 'file_name': 'entity_store.csv', 'monthly_update': False},
     )
 
     # parent platform
     task_load_entity_parent_platform = PythonOperator(
-            task_id='load_entity_parent_platform', 
-            python_callable=load_entity_data, 
-            provide_context=True,
-            op_kwargs={'table': ParentPlatform, 'file_name': 'entity_parent_platform.csv', 'monthly_update': False},
+        task_id='load_entity_parent_platform', 
+        python_callable=load_entity_data, 
+        provide_context=True,
+        op_kwargs={'table': ParentPlatform, 'file_name': 'entity_parent_platform.csv', 'monthly_update': False},
     )
 
     # platform
     task_load_entity_platform = PythonOperator(
-            task_id='load_entity_platform', 
-            python_callable=load_entity_data, 
-            provide_context=True,
-            op_kwargs={'table': Platform, 'file_name': 'entity_platform.csv', 'monthly_update': False},
+        task_id='load_entity_platform', 
+        python_callable=load_entity_data, 
+        provide_context=True,
+        op_kwargs={'table': Platform, 'file_name': 'entity_platform.csv', 'monthly_update': False},
     )
 
     # rating
     task_load_entity_rating = PythonOperator(
-            task_id='load_entity_rating', 
-            python_callable=load_entity_data, 
-            provide_context=True,
-            op_kwargs={'table': Rating, 'file_name': 'entity_rating.csv', 'monthly_update': False},
+        task_id='load_entity_rating', 
+        python_callable=load_entity_data, 
+        provide_context=True,
+        op_kwargs={'table': Rating, 'file_name': 'entity_rating.csv', 'monthly_update': False},
     )
 
     # Relationship
     # -------------------
     # GamePublisher
     task_load_game_publisher = PythonOperator(
-            task_id='load_rs_game_publisher', 
-            python_callable=load_game_relationship_data, 
-            provide_context=True,
-            op_kwargs={'entity': 'publisher', 'table': GamePublisher, 'file_name': 'rs_game_publisher.csv', 'monthly_update': False},
+        task_id='load_rs_game_publisher', 
+        python_callable=load_game_relationship_data, 
+        provide_context=True,
+        op_kwargs={'entity': 'publisher', 'table': GamePublisher, 'file_name': 'rs_game_publisher.csv', 'monthly_update': False},
     )
 
     # GameGenre
     task_load_game_genre = PythonOperator(
-            task_id='load_rs_game_genre', 
-            python_callable=load_game_relationship_data, 
-            provide_context=True,
-            op_kwargs={'entity': 'genre', 'table': GameGenre, 'file_name': 'rs_game_genre.csv', 'monthly_update': False},
+        task_id='load_rs_game_genre', 
+        python_callable=load_game_relationship_data, 
+        provide_context=True,
+        op_kwargs={'entity': 'genre', 'table': GameGenre, 'file_name': 'rs_game_genre.csv', 'monthly_update': False},
     )
 
     # GameTag
     task_load_game_tag = PythonOperator(
-            task_id='load_rs_game_tag', 
-            python_callable=load_game_relationship_data, 
-            provide_context=True,
-            op_kwargs={'entity': 'tag', 'table': GameTag, 'file_name': 'rs_game_tag.csv', 'monthly_update': False},
+        task_id='load_rs_game_tag', 
+        python_callable=load_game_relationship_data, 
+        provide_context=True,
+        op_kwargs={'entity': 'tag', 'table': GameTag, 'file_name': 'rs_game_tag.csv', 'monthly_update': False},
     )
 
     # GameStore
     task_load_game_store = PythonOperator(
-            task_id='load_rs_game_store', 
-            python_callable=load_game_relationship_data, 
-            provide_context=True,
-            op_kwargs={'entity': 'store', 'table': GameStore, 'file_name': 'rs_game_store.csv', 'monthly_update': False},
+        task_id='load_rs_game_store', 
+        python_callable=load_game_relationship_data, 
+        provide_context=True,
+        op_kwargs={'entity': 'store', 'table': GameStore, 'file_name': 'rs_game_store.csv', 'monthly_update': False},
     )
 
     # GamePlatform
     task_load_game_platform = PythonOperator(
-            task_id='load_rs_game_platform', 
-            python_callable=load_game_relationship_data, 
-            provide_context=True,
-            op_kwargs={'entity': 'platform', 'table': GamePlatform, 'file_name': 'rs_game_platform.csv', 'monthly_update': False},
+        task_id='load_rs_game_platform', 
+        python_callable=load_game_relationship_data, 
+        provide_context=True,
+        op_kwargs={'entity': 'platform', 'table': GamePlatform, 'file_name': 'rs_game_platform.csv', 'monthly_update': False},
     )
 
     # GameRating
     task_load_game_rating = PythonOperator(
-            task_id='load_rs_game_rating', 
-            python_callable=load_game_relationship_data, 
-            provide_context=True,
-            op_kwargs={'entity': 'rating', 'table': GameRating, 'file_name': 'rs_game_rating.csv', 'monthly_update': False},
+        task_id='load_rs_game_rating', 
+        python_callable=load_game_relationship_data, 
+        provide_context=True,
+        op_kwargs={'entity': 'rating', 'table': GameRating, 'file_name': 'rs_game_rating.csv', 'monthly_update': False},
     )
 
 

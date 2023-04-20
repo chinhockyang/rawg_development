@@ -37,7 +37,6 @@ from extract import *
 # Switch [Whether to perform Extraction]
 ################################################################################################
 
-# ------------------------------------------------------------------[FOR DEVELOPMENT PURPOSE]
 # if False --> GameList will not be extracted
 perform_extraction = True
 
@@ -201,19 +200,77 @@ with DAG(
 
     # Transform New Information (Genre, Tags etc.)
     # =========================================================================
-    task_transform_entity_game = PythonOperator(task_id='transform_entity_game', python_callable=transform_entity_game, provide_context=True) # ----------------------[TO MODIFY]
-    task_transform_entity_genre = PythonOperator(task_id='transform_entity_genre', python_callable=transform_entity_genre, provide_context=True)
-    task_transform_entity_tag = PythonOperator(task_id='transform_entity_tag', python_callable=transform_entity_tag, provide_context=True)
-    task_transform_entity_store = PythonOperator(task_id='transform_entity_store', python_callable=transform_entity_store, provide_context=True)
-    task_transform_entity_parent_platform = PythonOperator(task_id='transform_entity_parent_platform', python_callable=transform_entity_parent_platform, provide_context=True)
-    task_transform_entity_platform = PythonOperator(task_id='transform_entity_platform', python_callable=transform_entity_platform, provide_context=True)
-    task_transform_entity_rating = PythonOperator(task_id='transform_entity_rating', python_callable=transform_entity_rating, provide_context=True)
-    task_transform_rs_game_platform = PythonOperator(task_id='transform_rs_game_platform', python_callable=transform_rs_game_platform, provide_context=True)
-    task_transform_rs_game_genre = PythonOperator(task_id='transform_rs_game_genre', python_callable=transform_rs_game_genre, provide_context=True)
-    task_transform_rs_game_store = PythonOperator(task_id='transform_rs_game_store', python_callable=transform_rs_game_store, provide_context=True)
-    task_transform_rs_game_rating = PythonOperator(task_id='transform_rs_game_rating', python_callable=transform_rs_game_rating, provide_context=True)
-    task_transform_rs_game_tag = PythonOperator(task_id='transform_rs_game_tag', python_callable=transform_rs_game_tag, provide_context=True)
-
+    task_transform_entity_game = PythonOperator(
+        task_id='transform_entity_game', 
+        python_callable=transform_entity_game, 
+        provide_context=True
+    )
+    
+    task_transform_entity_genre = PythonOperator(
+        task_id='transform_entity_genre', 
+        python_callable=transform_entity_genre, 
+        provide_context=True
+    )
+    
+    task_transform_entity_tag = PythonOperator(
+        task_id='transform_entity_tag', 
+        python_callable=transform_entity_tag, 
+        provide_context=True
+    )
+    
+    task_transform_entity_store = PythonOperator(
+        task_id='transform_entity_store', 
+        python_callable=transform_entity_store, 
+        provide_context=True
+    )
+    
+    task_transform_entity_parent_platform = PythonOperator(
+        task_id='transform_entity_parent_platform', 
+        python_callable=transform_entity_parent_platform, 
+        provide_context=True
+    )
+    
+    task_transform_entity_platform = PythonOperator(
+        task_id='transform_entity_platform', 
+        python_callable=transform_entity_platform, 
+        provide_context=True
+    )
+    
+    task_transform_entity_rating = PythonOperator(
+        task_id='transform_entity_rating', 
+        python_callable=transform_entity_rating, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_platform = PythonOperator(
+        task_id='transform_rs_game_platform', 
+        python_callable=transform_rs_game_platform, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_genre = PythonOperator(
+        task_id='transform_rs_game_genre', 
+        python_callable=transform_rs_game_genre, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_store = PythonOperator(
+        task_id='transform_rs_game_store', 
+        python_callable=transform_rs_game_store, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_rating = PythonOperator(
+        task_id='transform_rs_game_rating', 
+        python_callable=transform_rs_game_rating, 
+        provide_context=True
+    )
+    
+    task_transform_rs_game_tag = PythonOperator(
+        task_id='transform_rs_game_tag', 
+        python_callable=transform_rs_game_tag, 
+        provide_context=True
+    )
 
     # Load
     # =========================================================================
