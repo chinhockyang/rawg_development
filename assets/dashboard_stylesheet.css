@@ -1,50 +1,88 @@
-body {
-    /* background-color: black; */
-    padding: 1vw;
-    /* color: white; */
+.side_bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 16rem;
+    padding: 2rem 1rem;
+    background-color: #f8f9fa;
 }
 
-/* .main_container{
-    padding: 1vw;
-    background-color: aliceblue;
-} */
-
-.section_container{
-    margin-top: 1vw;
-    margin-bottom: 1vw;
-    padding: 0px;
-    /* background-color: bisque; */
+.content_style {
+    margin-left: 18rem;
+    margin-right: 2rem;
+    padding: 2rem 1rem;
+    height: 100vh;
 }
 
-.feature_dropdown {
-    width: 25%;
-    margin-top: 1vw;
-    margin-bottom: 1vw;
-    margin-left: auto;
-    margin-right: auto;
+.filter_group {
+    padding-bottom: 1rem;
+}
+
+.eda_graph {
+    height: 25vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    padding: 10px;
+}
+
+.heatmap {
+    height: 70vh;
+    width: 100%;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    padding: 10px;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
 }
 
 .feature_dropdown_small {
-    width: 80%;
-    margin-top: 1vw;
-    margin-bottom: 1vw;
+    width: 20vw;
     margin-left: auto;
     margin-right: auto;
 }
 
-.left_grid {
-    width: 50%;
+.ra_graph {
+    height: 40vh;
+}
+
+.ra_graph_container {
+    height: 50vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    margin-inline: 10px;
     display: flex;
-    align-items: stretch;
+    flex-direction: column;
+    justify-content: center;
+    padding: 10px;
 }
 
-.right_grid {
-    width: 50%;
+.amr_graph {
+    height: 40vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    margin-inline: 0;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    padding: 10px;
 }
 
-/* figure this out */
-.heatmap {
-    height: 100vh;
-    /* display: flex; */
-    /* flex: 1; */
+.metric_card {
+    height: 20vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    padding: 10px;
+}
+
+.fi_graph {
+    height: 65vh;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    margin-inline: 10px;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
