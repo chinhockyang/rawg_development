@@ -13,9 +13,9 @@
 - pymysql
 - apache-airflow (view detailed instructions below)
 - dash
-- dash_bootstrap_components
-- plotly
+- dash-bootstrap-components
 - dash-bootstrap-templates
+- plotly
 4. Create a .env file in the project directory, and store your RAWG API token as ```RAWG_TOKEN=<YOUR_TOKEN>```
 5. Should be able to use the notebooks. (Don't run all cells at once if not might waste API requests)
 
