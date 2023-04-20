@@ -25,8 +25,7 @@ from database import *
 # Switch [Whether to perform Extraction]
 ################################################################################################
 
-perform_extraction = False
-
+perform_extraction = True
 
 # Set local machine data directory (Directory used to store back-up data)
 ################################################################################################
