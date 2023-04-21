@@ -21,7 +21,7 @@ This project aims to perform Data Analysis on recent video games (starting from 
 | SQLAlchemy | `pip install SQLAlchemy` | SQL Database Operations |
 | Scikit-learn | `pip install scikit-learn` | Machine Learning |
 | Seaborn | `pip install seaborn` | Data Visualisation
-| Plotly | `pip install plotly` | Data Visualisation |
+| Plotly-Express | `pip install plotly-express` | Data Visualisation |
 | Dash | `pip install dash` | Dashboard |
 | Dash Bootstrap Components | `pip install dash-bootstrap-components` | Dashboard |
 | Dash Bootstrap Templates | `pip install dash-bootstrap-templates` | Dashboard |
