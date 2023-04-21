@@ -5,6 +5,12 @@ numpy
 pandas
 python-dotenv
 apache-airflow==2.3.1
-sqlalchemy
+SQLAlchemy
 pymysql
 matplotlib
+requests
+scikit-learn
+seaborn
+plotly-express
+dash-bootstrap-components
+dash-bootstrap-templates
