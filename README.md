@@ -1,8 +1,12 @@
-# Video Game Analysis (RAWG Database)
+# Video Game Data Analysis (RAWG Database)
 
 ## Introduction
 
 This project aims to perform Data Analysis on recent video games (starting from 2018) to identify key patterns and traits among successful recent games, and develop a predictive model that can classify the success or popularity of future games. Using Apache-Airflow, an Extract, Transform, Load and Transform (ETLT) pipeline will be used to fetch  latest data of video games every month from [RAWG](https://rawg.io/apidocs), an online video games database API, into a MySQL Data Warehouse. This Data Warehouse will serve 2 main downstream applications: a Dashboard Application (built using Plotly Dash) to provide data visualisations and analysis, and a Classification Model to classify a game's success.
+
+<span>
+		<img src="https://github.com/chinhockyang/rawg_development/blob/finalise/assets/media/pipeline_diagram.png" alt="Pipeline" border="10" />
+</span>
 
 ## Basic Environment Setup
 
@@ -28,6 +32,7 @@ This project aims to perform Data Analysis on recent video games (starting from 
 
 4. Create a RAWG user account and obtain API key [here](https://rawg.io/login?forward=developer)
 5. Create a ```.env``` file in the project directory, and store your RAWG API token as ```RAWG_TOKEN=<YOUR_TOKEN>```
+6. Follow the guide [here](https://github.com/chinhockyang/rawg_development/blob/finalise/data/README.md) for information on ```data``` folder setup
 
 ## MySQL Database Setup
 
@@ -56,3 +61,6 @@ This project aims to perform Data Analysis on recent video games (starting from 
 ## Dashboard Usage
 
 1. Run ```python dashboard.py``` to run Flask app on http://127.0.0.1:8050/
+<span>
+		<img src="https://github.com/chinhockyang/rawg_development/blob/finalise/assets/media/dashboard_screenshot.png" alt="Dashboard" border="10" />
+</span>
